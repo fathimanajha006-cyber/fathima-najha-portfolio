@@ -1,205 +1,140 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Volume2,
   VolumeX,
   Eye,
-  Compass,
+  Map,
+  Sparkles,
+  Home,
   GraduationCap,
   Code2,
-  Cpu,
+  FlaskConical,
   Briefcase,
   Trophy,
   FileCheck,
   Radio,
-  ArrowUp,
-  ArrowDown,
-  ArrowLeft,
-  ArrowRight,
-  Zap
+  ChevronRight
 } from 'lucide-react';
 import { portfolioData } from '../data/portfolioData';
 import { soundManager } from '../utils/soundManager';
 
-const DISTRICT_ICONS = {
-  city: Compass,
-  education: GraduationCap,
-  projects: Code2,
-  lab: Cpu,
-  experience: Briefcase,
-  vault: Trophy,
-  certifications: FileCheck,
-  contact: Radio
+const ICONS = {
+  Home: Home,
+  GraduationCap: GraduationCap,
+  Code2: Code2,
+  FlaskConical: FlaskConical,
+  Briefcase: Briefcase,
+  Trophy: Trophy,
+  FileCheck: FileCheck,
+  Radio: Radio
 };
 
 export default function HUD({
-  activeDistrict,
-  onSelectDistrict,
-  nearbyBuilding,
+  activeBuilding,
+  onSelectLocation,
+  onOpenMap,
   isMuted,
   onToggleMute,
   reducedMotion,
-  onToggleReducedMotion,
-  onSimulateMove
+  onToggleReducedMotion
 }) {
   const { districts } = portfolioData;
-  const currentMeta = districts.find((d) => d.id === activeDistrict) || districts[0];
+  const currentMeta = districts.find((d) => d.id === activeBuilding) || districts[0];
+
+  // Speech bubble random tips
+  const [guideTip, setGuideTip] = useState('Welcome! Click any building to explore ✨');
 
   return (
     <>
       {/* ========================================================
-          TOP-LEFT: MINIMAL OS LOGO & CURRENT LOCATION
+          TOP-LEFT: BRAND & LOCATION BREADCRUMB
       ======================================================== */}
-      <div className="fixed top-4 left-4 z-40 pointer-events-auto">
-        <div className="flex items-center gap-3 p-2.5 rounded-xl bg-[#030814]/80 border border-[#00ffcc25] backdrop-blur-md">
-          <span className="w-2.5 h-2.5 rounded-full bg-[#00ffcc] animate-pulse" />
-          <div className="text-left font-['Orbitron']">
-            <div className="text-xs font-black text-white tracking-widest">
-              FATHIMA.OS
+      <header className="fixed top-4 left-4 z-40 pointer-events-auto">
+        <div className="flex items-center gap-3 px-4 py-2.5 rounded-2xl bg-white/95 border border-sky-100 shadow-md backdrop-blur-md">
+          <span className="text-xl">🌸</span>
+          <div>
+            <div className="text-xs md:text-sm font-black font-['Outfit'] text-slate-800 tracking-tight flex items-center gap-1.5">
+              <span>FATHIMA NAJHA.OS</span>
             </div>
-            <div className="text-[10px] font-mono text-[#00ffcc] tracking-wider uppercase">
-              // {activeDistrict === 'city' ? 'CITY STREETS OVERVIEW' : currentMeta.name}
+            <div className="text-[11px] font-bold font-['Quicksand'] text-sky-500 uppercase flex items-center gap-1">
+              <span>CITY PLAZA</span>
+              {activeBuilding && activeBuilding !== 'city' && (
+                <>
+                  <ChevronRight className="w-3 h-3 text-slate-400" />
+                  <span className="text-pink-500 font-black">{currentMeta.label}</span>
+                </>
+              )}
             </div>
           </div>
         </div>
-      </div>
+      </header>
 
       {/* ========================================================
-          TOP-RIGHT: MOTION & AUDIO CONTROLS
+          TOP-RIGHT: CONTROLS (MAP, AUDIO, MOTION)
       ======================================================== */}
       <div className="fixed top-4 right-4 z-40 flex items-center gap-2 pointer-events-auto">
-        {/* Motion Toggle */}
+        {/* CITY MAP BUTTON */}
         <button
-          onClick={onToggleReducedMotion}
-          title="Toggle Reduced Motion"
-          className={`p-2 rounded-lg border backdrop-blur-md text-xs font-mono transition-all cursor-pointer flex items-center gap-1.5 ${
-            reducedMotion
-              ? 'bg-amber-950/70 border-amber-500 text-amber-300'
-              : 'bg-[#030814]/80 border-[#00ffcc20] text-gray-400 hover:text-white'
-          }`}
+          onClick={() => {
+            soundManager.playClick();
+            onOpenMap();
+          }}
+          className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-white/95 border border-sky-200 text-sky-700 font-['Outfit'] font-black text-xs shadow-md hover:bg-sky-50 transition-all cursor-pointer"
         >
-          <Eye className="w-4 h-4" />
-          <span className="hidden sm:inline text-[10px]">
-            {reducedMotion ? 'MOTION: REDUCED' : 'MOTION: FULL'}
-          </span>
+          <span>🗺️</span>
+          <span>CITY MAP</span>
         </button>
 
         {/* Audio Toggle */}
         <button
           onClick={onToggleMute}
-          title="Toggle Audio"
-          className={`p-2 rounded-lg border backdrop-blur-md text-xs font-mono transition-all cursor-pointer flex items-center gap-1.5 ${
-            !isMuted
-              ? 'bg-[#00ffcc20] border-[#00ffcc] text-[#00ffcc] shadow-[0_0_12px_rgba(0,255,204,0.4)]'
-              : 'bg-[#030814]/80 border-[#00ffcc20] text-gray-400 hover:text-white'
-          }`}
+          title={isMuted ? 'Unmute cozy audio' : 'Mute audio'}
+          className="p-2 rounded-2xl bg-white/95 border border-slate-200 text-slate-600 hover:text-slate-900 shadow-md hover:bg-slate-50 transition-all cursor-pointer"
         >
-          {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-          <span className="hidden sm:inline text-[10px]">
-            {isMuted ? 'AUDIO: OFF' : 'AUDIO: ON'}
-          </span>
+          {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4 text-sky-500" />}
+        </button>
+
+        {/* Reduced Motion Toggle */}
+        <button
+          onClick={onToggleReducedMotion}
+          title="Toggle Reduced Motion"
+          className="p-2 rounded-2xl bg-white/95 border border-slate-200 text-slate-600 hover:text-slate-900 shadow-md hover:bg-slate-50 transition-all cursor-pointer"
+        >
+          <Eye className={`w-4 h-4 ${reducedMotion ? 'text-amber-500' : ''}`} />
         </button>
       </div>
 
       {/* ========================================================
-          CENTER: PROXIMITY BUILDING NOTIFICATION
+          BOTTOM: EASY NAVIGATION DOCK
       ======================================================== */}
-      {nearbyBuilding && activeDistrict === 'city' && (
-        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-40 pointer-events-auto animate-fadeIn">
-          <button
-            onClick={() => {
-              soundManager.playClick();
-              onSelectDistrict(nearbyBuilding.id);
-            }}
-            className="flex items-center gap-3 px-5 py-2.5 rounded-full bg-[#051124]/90 border border-[#00ffcc] shadow-[0_0_30px_rgba(0,255,204,0.4)] backdrop-blur-md cursor-pointer hover:scale-105 transition-all text-xs font-mono font-bold text-white group"
-          >
-            <Zap className="w-4 h-4 text-[#00ffcc] animate-bounce" />
-            <span>
-              NEAR: <span className="text-[#00ffcc]">{nearbyBuilding.title}</span> ({nearbyBuilding.dist}m)
-            </span>
-            <span className="px-2 py-0.5 rounded bg-[#00ffcc] text-[#020409] font-black">
-              PRESS [E] OR CLICK TO ENTER
-            </span>
-          </button>
-        </div>
-      )}
+      <nav className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 pointer-events-auto max-w-[96vw]">
+        <div className="flex items-center gap-1.5 p-1.5 rounded-2xl bg-white/95 border-2 border-sky-100 shadow-[0_10px_35px_rgba(148,163,184,0.3)] backdrop-blur-md overflow-x-auto">
+          {districts.map((d) => {
+            const Icon = ICONS[d.icon] || Home;
+            const isActive = activeBuilding === d.id || (!activeBuilding && d.id === 'city');
 
-      {/* ========================================================
-          BOTTOM: SUBTLE FAST-TRAVEL DOCK & CONTROLS HELPER
-      ======================================================== */}
-      <div className="fixed bottom-3 left-1/2 -translate-x-1/2 z-40 pointer-events-auto flex flex-col items-center gap-2">
-        {/* Movement Hint */}
-        {activeDistrict === 'city' && (
-          <div className="hidden sm:block text-[11px] font-mono text-gray-400 bg-[#02050e]/80 px-3 py-1 rounded-full border border-gray-800">
-            [WASD / ARROWS] TRAVEL STREETS • [DRAG] LOOK • APPROACH BUILDINGS TO ENTER
-          </div>
-        )}
-
-        {/* Minimal Landmark Quick Jump Dock */}
-        <nav className="flex items-center gap-1 p-1 rounded-xl bg-[#030814]/85 border border-[#00ffcc25] backdrop-blur-md shadow-[0_0_25px_rgba(0,0,0,0.8)] overflow-x-auto max-w-[95vw]">
-          {districts.map((d, idx) => {
-            const Icon = DISTRICT_ICONS[d.id] || Compass;
-            const isActive = activeDistrict === d.id;
             return (
               <button
                 key={d.id}
                 onClick={() => {
                   soundManager.playClick();
-                  onSelectDistrict(d.id);
+                  onSelectLocation(d.id);
                 }}
                 onMouseEnter={() => soundManager.playHover()}
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-['Rajdhani'] font-bold tracking-wider transition-all cursor-pointer whitespace-nowrap ${
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-['Outfit'] font-bold tracking-tight transition-all cursor-pointer whitespace-nowrap ${
                   isActive
-                    ? 'bg-gradient-to-r from-[#00ffcc] to-[#38bdf8] text-[#020409] shadow-[0_0_15px_rgba(0,255,204,0.4)]'
-                    : 'text-gray-400 hover:text-white hover:bg-white/5'
+                    ? 'bg-gradient-to-r from-sky-400 to-cyan-400 text-white shadow-md shadow-sky-200 scale-105'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
                 }`}
               >
-                <Icon className="w-3.5 h-3.5" />
+                <span className="text-sm">{d.emoji}</span>
                 <span className="hidden md:inline">{d.label}</span>
                 <span className="md:hidden">{d.label.slice(0, 4)}</span>
-                <span className="text-[9px] font-mono opacity-60">[{idx + 1}]</span>
               </button>
             );
           })}
-        </nav>
-      </div>
-
-      {/* ========================================================
-          MOBILE ON-SCREEN D-PAD (Only visible on small touch screens in city mode)
-      ======================================================== */}
-      {activeDistrict === 'city' && (
-        <div className="sm:hidden fixed bottom-18 left-4 z-40 pointer-events-auto grid grid-cols-3 gap-1 p-2 rounded-xl bg-[#030814]/80 border border-[#00ffcc25] backdrop-blur-md">
-          <div />
-          <button
-            onTouchStart={() => onSimulateMove?.('w', true)}
-            onTouchEnd={() => onSimulateMove?.('w', false)}
-            className="p-2.5 rounded bg-[#091b38] text-[#00ffcc] flex items-center justify-center active:bg-[#00ffcc] active:text-black"
-          >
-            <ArrowUp className="w-4 h-4" />
-          </button>
-          <div />
-          <button
-            onTouchStart={() => onSimulateMove?.('a', true)}
-            onTouchEnd={() => onSimulateMove?.('a', false)}
-            className="p-2.5 rounded bg-[#091b38] text-[#00ffcc] flex items-center justify-center active:bg-[#00ffcc] active:text-black"
-          >
-            <ArrowLeft className="w-4 h-4" />
-          </button>
-          <button
-            onTouchStart={() => onSimulateMove?.('s', true)}
-            onTouchEnd={() => onSimulateMove?.('s', false)}
-            className="p-2.5 rounded bg-[#091b38] text-[#00ffcc] flex items-center justify-center active:bg-[#00ffcc] active:text-black"
-          >
-            <ArrowDown className="w-4 h-4" />
-          </button>
-          <button
-            onTouchStart={() => onSimulateMove?.('d', true)}
-            onTouchEnd={() => onSimulateMove?.('d', false)}
-            className="p-2.5 rounded bg-[#091b38] text-[#00ffcc] flex items-center justify-center active:bg-[#00ffcc] active:text-black"
-          >
-            <ArrowRight className="w-4 h-4" />
-          </button>
         </div>
-      )}
+      </nav>
     </>
   );
 }

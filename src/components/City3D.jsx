@@ -1,130 +1,157 @@
 import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
-import { createCyberCharacter, createArcadePerch } from './CyberCharacter';
+import { createCuteCharacter } from './CuteCharacter';
 import { soundManager } from '../utils/soundManager';
 
-// 7 Landmark District Coordinates & Colors in the Open City
-const LANDMARKS = [
+// 7 Landmark Buildings in the Radial Central Plaza
+export const CUTE_BUILDINGS = [
   {
     id: 'education',
     name: 'EDUCATION',
-    title: 'EDUCATION TOWER',
-    pos: new THREE.Vector3(-45, 0, 25),
-    color: 0x38bdf8,
-    labelColor: '#38bdf8'
+    subtitle: 'University Tower',
+    emoji: '🎓',
+    pos: new THREE.Vector3(0, 0, -32),
+    color: 0x818cf8, // soft lavender/indigo
+    accent: 0xa5b4fc,
+    roofColor: 0x4f46e5,
+    icon: '🎓'
   },
   {
     id: 'projects',
     name: 'PROJECTS',
-    title: 'PROJECTS RESEARCH FACILITY',
-    pos: new THREE.Vector3(45, 0, 25),
-    color: 0x00ffcc,
-    labelColor: '#00ffcc'
+    subtitle: 'Creative Tech Studio',
+    emoji: '💻',
+    pos: new THREE.Vector3(26, 0, -18),
+    color: 0x06b6d4, // bright pastel cyan
+    accent: 0x67e8f9,
+    roofColor: 0x0891b2,
+    icon: '💻'
   },
   {
     id: 'lab',
     name: 'TECH LAB',
-    title: 'TECH LAB FACILITY',
-    pos: new THREE.Vector3(-48, 0, -35),
-    color: 0xa855f7,
-    labelColor: '#a855f7'
+    subtitle: 'Science & Code Lab',
+    emoji: '🧪',
+    pos: new THREE.Vector3(-26, 0, -18),
+    color: 0xa855f7, // soft friendly purple
+    accent: 0xd8b4fe,
+    roofColor: 0x7e22ce,
+    icon: '🧪'
   },
   {
     id: 'experience',
     name: 'EXPERIENCE',
-    title: 'EXPERIENCE TOWER',
-    pos: new THREE.Vector3(48, 0, -35),
-    color: 0x00ffcc,
-    labelColor: '#00ffcc'
+    subtitle: 'Modern Office Tower',
+    emoji: '💼',
+    pos: new THREE.Vector3(-30, 0, 14),
+    color: 0xfb923c, // warm peach / orange
+    accent: 0xfed7aa,
+    roofColor: 0xea580c,
+    icon: '💼'
   },
   {
     id: 'vault',
     name: 'ACHIEVEMENTS',
-    title: 'ACHIEVEMENT VAULT',
-    pos: new THREE.Vector3(0, 0, -65),
-    color: 0xf59e0b,
-    labelColor: '#f59e0b'
+    subtitle: 'Golden Trophy Tower',
+    emoji: '🏆',
+    pos: new THREE.Vector3(30, 0, 14),
+    color: 0xfacc15, // warm golden yellow
+    accent: 0xfef08a,
+    roofColor: 0xca8a04,
+    icon: '🏆'
   },
   {
     id: 'certifications',
     name: 'CERTIFICATIONS',
-    title: 'CERTIFICATION ARCHIVE',
-    pos: new THREE.Vector3(-24, 0, 65),
-    color: 0x06b6d4,
-    labelColor: '#06b6d4'
+    subtitle: 'Cute Library Archive',
+    emoji: '📜',
+    pos: new THREE.Vector3(-16, 0, 32),
+    color: 0x10b981, // mint / emerald pastel
+    accent: 0x6ee7b7,
+    roofColor: 0x059669,
+    icon: '📜'
   },
   {
     id: 'contact',
     name: 'CONTACT',
-    title: 'COMMUNICATION TOWER',
-    pos: new THREE.Vector3(24, 0, 65),
-    color: 0xf43f5e,
-    labelColor: '#f43f5e'
+    subtitle: 'Communication Tower',
+    emoji: '📡',
+    pos: new THREE.Vector3(16, 0, 32),
+    color: 0xf43f5e, // soft rose / pink
+    accent: 0xfda4af,
+    roofColor: 0xe11d48,
+    icon: '📡'
   }
 ];
 
 export default function City3D({
-  activeDistrict,
-  onSelectDistrict,
-  onNearbyBuilding,
-  reducedMotion,
-  isIntroPlaying
+  activeBuilding,
+  onSelectBuilding,
+  onHoverBuilding,
+  reducedMotion
 }) {
   const containerRef = useRef(null);
   const stateRef = useRef({
     scene: null,
     camera: null,
     renderer: null,
-    player: {
-      pos: new THREE.Vector3(0, 0, 18),
-      velocity: new THREE.Vector3(),
-      yaw: 0,
-      pitch: -0.1,
-      speed: 18,
-      isMoving: false
-    },
-    keys: { w: false, a: false, s: false, d: false, shift: false },
-    character: null,
-    arcadePerch: null,
-    landmarksMap: {},
-    animatedElements: [],
-    flyingTraffic: [],
-    nearbyBuildingId: null,
+    guideCharacter: null,
+    buildingGroups: {},
+    interactiveMeshes: [],
+    clouds: [],
+    cars: [],
+    animatedDecor: [],
+    camTarget: new THREE.Vector3(0, 3, 0),
+    desiredCamPos: new THREE.Vector3(0, 36, 48), // cozy isometric wide establishing shot
+    currentCamPos: new THREE.Vector3(0, 36, 48),
+    currentCamTarget: new THREE.Vector3(0, 3, 0),
     isDragging: false,
-    dragStart: { x: 0, y: 0 }
+    dragStart: { x: 0, y: 0 },
+    orbitAngle: 0,
+    orbitPitch: 0.55,
+    hoveredId: null
   });
 
-  // Handle building selection via keyboard / HUD
+  // Camera navigation when activeBuilding changes
   useEffect(() => {
-    if (activeDistrict !== 'city') {
-      const landmark = LANDMARKS.find((l) => l.id === activeDistrict);
-      if (landmark) {
-        soundManager.playWarp();
+    if (activeBuilding === 'city' || !activeBuilding) {
+      // Return to Wide Plaza View
+      stateRef.current.desiredCamPos.set(0, 34, 46);
+      stateRef.current.camTarget.set(0, 2, 0);
+    } else {
+      const b = CUTE_BUILDINGS.find((item) => item.id === activeBuilding);
+      if (b) {
+        // Fly directly toward the building with a cozy angled front view
+        const dir = b.pos.clone().normalize();
+        const camOffset = dir.clone().multiplyScalar(14).add(new THREE.Vector3(0, 11, 0));
+        stateRef.current.desiredCamPos.copy(b.pos).add(camOffset);
+        stateRef.current.camTarget.copy(b.pos).add(new THREE.Vector3(0, 5, 0));
       }
     }
-  }, [activeDistrict]);
+  }, [activeBuilding]);
 
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
-    // --- THREE.JS SCENE SETUP ---
+    // --- SCENE SETUP ---
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x020409);
-    scene.fog = new THREE.FogExp2(0x020409, 0.011);
+    scene.background = new THREE.Color(0xdceefb); // Soft pastel morning sky
+    scene.fog = new THREE.FogExp2(0xdceefb, 0.008);
     stateRef.current.scene = scene;
 
-    // Camera
+    // --- CAMERA SETUP ---
     const camera = new THREE.PerspectiveCamera(
-      58,
+      48,
       container.clientWidth / container.clientHeight,
       0.1,
-      1200
+      1000
     );
-    camera.position.set(0, 8, 30);
+    camera.position.set(0, 36, 48);
+    camera.lookAt(0, 2, 0);
     stateRef.current.camera = camera;
 
-    // Renderer
+    // --- RENDERER SETUP ---
     const renderer = new THREE.WebGLRenderer({
       antialias: true,
       powerPreference: 'high-performance',
@@ -133,423 +160,504 @@ export default function City3D({
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setSize(container.clientWidth, container.clientHeight);
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.3;
+    renderer.toneMappingExposure = 1.15;
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     container.appendChild(renderer.domElement);
     stateRef.current.renderer = renderer;
 
-    // --- LIGHTING ---
-    const ambientLight = new THREE.AmbientLight(0x0c172e, 2.8);
-    scene.add(ambientLight);
+    // --- COZY LIGHTING ---
+    const hemiLight = new THREE.HemisphereLight(0xfffbf0, 0xdcf0fa, 1.4);
+    scene.add(hemiLight);
 
-    const moonLight = new THREE.DirectionalLight(0x38bdf8, 1.8);
-    moonLight.position.set(60, 120, 60);
-    scene.add(moonLight);
+    const sunLight = new THREE.DirectionalLight(0xfff7e6, 2.2);
+    sunLight.position.set(45, 80, 45);
+    sunLight.castShadow = true;
+    sunLight.shadow.mapSize.width = 2048;
+    sunLight.shadow.mapSize.height = 2048;
+    sunLight.shadow.camera.near = 10;
+    sunLight.shadow.camera.far = 200;
+    const shadowR = 60;
+    sunLight.shadow.camera.left = -shadowR;
+    sunLight.shadow.camera.right = shadowR;
+    sunLight.shadow.camera.top = shadowR;
+    sunLight.shadow.camera.bottom = -shadowR;
+    sunLight.shadow.bias = -0.0005;
+    scene.add(sunLight);
 
-    const warmRim = new THREE.DirectionalLight(0xff5500, 1.2);
-    warmRim.position.set(-60, 80, -60);
-    scene.add(warmRim);
+    // Soft sky rim light
+    const skyFill = new THREE.DirectionalLight(0xbae6fd, 0.8);
+    skyFill.position.set(-45, 60, -45);
+    scene.add(skyFill);
 
-    // --- WET CYBER ASPHALT GROUND ---
-    const groundGeo = new THREE.PlaneGeometry(400, 400, 60, 60);
-    const groundMat = new THREE.MeshStandardMaterial({
-      color: 0x050914,
-      roughness: 0.22,
-      metalness: 0.92
+    // --- GROUND ISLAND: SOFT MINT PARK & COBBLESTONE PATHS ---
+    const islandGeo = new THREE.CylinderGeometry(62, 66, 4, 64);
+    const islandMat = new THREE.MeshStandardMaterial({
+      color: 0xebf7ee, // fresh soft mint grass
+      roughness: 0.8,
+      metalness: 0.05
     });
-    const ground = new THREE.Mesh(groundGeo, groundMat);
-    ground.rotation.x = -Math.PI / 2;
-    scene.add(ground);
+    const island = new THREE.Mesh(islandGeo, islandMat);
+    island.position.y = -2;
+    island.receiveShadow = true;
+    scene.add(island);
 
-    // Glowing Road Grid & Crossings
-    const roadGrid = new THREE.GridHelper(400, 80, 0x00ffcc, 0x0a1a38);
-    roadGrid.position.y = 0.04;
-    scene.add(roadGrid);
+    // Island Earth base
+    const earthBase = new THREE.Mesh(
+      new THREE.CylinderGeometry(66, 68, 6, 64),
+      new THREE.MeshStandardMaterial({ color: 0x94725c, roughness: 0.9 })
+    );
+    earthBase.position.y = -6;
+    scene.add(earthBase);
 
-    // Concentric cyber plaza rings
-    for (let r of [22, 50, 85, 125]) {
-      const ring = new THREE.Mesh(
-        new THREE.RingGeometry(r - 0.25, r + 0.25, 64),
-        new THREE.MeshBasicMaterial({
-          color: r === 50 ? 0xff0055 : 0x00ffcc,
-          side: THREE.DoubleSide,
-          transparent: true,
-          opacity: 0.4
-        })
+    // Water surrounding ring
+    const water = new THREE.Mesh(
+      new THREE.RingGeometry(64, 180, 64),
+      new THREE.MeshStandardMaterial({
+        color: 0x7dd3fc,
+        roughness: 0.1,
+        metalness: 0.2,
+        transparent: true,
+        opacity: 0.85
+      })
+    );
+    water.rotation.x = -Math.PI / 2;
+    water.position.y = -3.8;
+    scene.add(water);
+
+    // --- CENTRAL CITY PLAZA (COBBLESTONE CIRCLE) ---
+    const plaza = new THREE.Mesh(
+      new THREE.CircleGeometry(16, 48),
+      new THREE.MeshStandardMaterial({
+        color: 0xfdf4ec, // warm cream stone
+        roughness: 0.7
+      })
+    );
+    plaza.rotation.x = -Math.PI / 2;
+    plaza.position.y = 0.02;
+    plaza.receiveShadow = true;
+    scene.add(plaza);
+
+    // Plaza outer border ring
+    const plazaRing = new THREE.Mesh(
+      new THREE.RingGeometry(15.8, 16.5, 48),
+      new THREE.MeshStandardMaterial({ color: 0xfde047, roughness: 0.6 })
+    );
+    plazaRing.rotation.x = -Math.PI / 2;
+    plazaRing.position.y = 0.03;
+    scene.add(plazaRing);
+
+    // Cobblestone roads leading from Plaza to each building
+    CUTE_BUILDINGS.forEach((b) => {
+      const roadLength = b.pos.length() - 8;
+      const roadGeo = new THREE.PlaneGeometry(5.5, roadLength);
+      const roadMat = new THREE.MeshStandardMaterial({
+        color: 0xfef9f3,
+        roughness: 0.7
+      });
+      const road = new THREE.Mesh(roadGeo, roadMat);
+      road.rotation.x = -Math.PI / 2;
+      const angle = Math.atan2(b.pos.x, b.pos.z);
+      road.rotation.z = -angle;
+
+      const midPoint = b.pos.clone().multiplyScalar(0.48);
+      road.position.set(midPoint.x, 0.025, midPoint.z);
+      road.receiveShadow = true;
+      scene.add(road);
+    });
+
+    // --- CENTRAL PLAZA FOUNTAIN ---
+    const fountainGroup = new THREE.Group();
+    fountainGroup.position.set(0, 0, 0);
+
+    const basin = new THREE.Mesh(
+      new THREE.CylinderGeometry(3.5, 4.0, 1.0, 32),
+      new THREE.MeshStandardMaterial({ color: 0xf1f5f9, roughness: 0.4 })
+    );
+    basin.position.y = 0.5;
+    basin.castShadow = true;
+    basin.receiveShadow = true;
+    fountainGroup.add(basin);
+
+    const fountainWater = new THREE.Mesh(
+      new THREE.CylinderGeometry(3.2, 3.2, 0.1, 32),
+      new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.1, metalness: 0.3 })
+    );
+    fountainWater.position.y = 0.95;
+    fountainGroup.add(fountainWater);
+
+    const pillar = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.8, 1.0, 2.2, 16),
+      new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.3 })
+    );
+    pillar.position.y = 1.6;
+    pillar.castShadow = true;
+    fountainGroup.add(pillar);
+
+    // Glowing cute gem on top of fountain
+    const gem = new THREE.Mesh(
+      new THREE.DodecahedronGeometry(0.7),
+      new THREE.MeshStandardMaterial({ color: 0x38bdf8, emissive: 0x38bdf8, emissiveIntensity: 0.4 })
+    );
+    gem.position.y = 3.0;
+    fountainGroup.add(gem);
+    scene.add(fountainGroup);
+
+    // --- CUTE GUIDE CHARACTER (NAJHA GUIDE) IN PLAZA ---
+    const guideCharacter = createCuteCharacter();
+    guideCharacter.position.set(0, 0, 4.2);
+    guideCharacter.rotation.y = 0; // facing front
+    scene.add(guideCharacter);
+    stateRef.current.guideCharacter = guideCharacter;
+
+    // --- PLAZA BENCHES & FLOWER PLANTERS ---
+    for (let i = 0; i < 4; i++) {
+      const angle = (i * Math.PI) / 2 + Math.PI / 4;
+      const bx = Math.sin(angle) * 9.5;
+      const bz = Math.cos(angle) * 9.5;
+
+      // Planter
+      const planter = new THREE.Mesh(
+        new THREE.CylinderGeometry(1.2, 1.0, 0.8, 16),
+        new THREE.MeshStandardMaterial({ color: 0xffedd5, roughness: 0.6 })
       );
-      ring.rotation.x = -Math.PI / 2;
-      ring.position.y = 0.06;
-      scene.add(ring);
+      planter.position.set(bx, 0.4, bz);
+      planter.castShadow = true;
+      scene.add(planter);
+
+      // Flowers
+      const flowerColor = i % 2 === 0 ? 0xf472b6 : 0xfacc15;
+      const flowers = new THREE.Mesh(
+        new THREE.SphereGeometry(0.8, 12, 12),
+        new THREE.MeshStandardMaterial({ color: flowerColor, roughness: 0.5 })
+      );
+      flowers.position.set(bx, 1.0, bz);
+      scene.add(flowers);
     }
 
-    // --- CHARACTER & INTRO PERCH (REFERENCE 2) ---
-    const character = createCyberCharacter();
-    scene.add(character);
-    stateRef.current.character = character;
+    // --- POPULATE THE 7 DISTINCT BUILDINGS ---
+    const interactiveMeshes = [];
+    const buildingGroups = {};
 
-    const perch = createArcadePerch();
-    perch.position.set(0, 0, 16);
-    scene.add(perch);
-    stateRef.current.arcadePerch = perch;
-
-    // Initial character sits on perch during intro
-    character.position.set(0, 2.3, 16);
-    if (character.userData.anim?.setSitting) {
-      character.userData.anim.setSitting(true);
-    }
-
-    // --- BUILD 7 DISTINCT ARCHITECTURAL LANDMARKS ---
-    const landmarksMap = {};
-
-    function createMarqueeTexture(title, sub, colorHex) {
+    function makeSignCanvas(emoji, name) {
       const canvas = document.createElement('canvas');
       canvas.width = 512;
-      canvas.height = 160;
+      canvas.height = 180;
       const ctx = canvas.getContext('2d');
-      ctx.fillStyle = '#030814';
-      ctx.fillRect(0, 0, 512, 160);
-      ctx.strokeStyle = colorHex;
-      ctx.lineWidth = 6;
-      ctx.strokeRect(6, 6, 500, 148);
+
+      // Rounded pill badge
       ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 38px monospace';
+      ctx.beginPath();
+      ctx.roundRect(10, 10, 492, 160, 40);
+      ctx.fill();
+
+      // Border
+      ctx.lineWidth = 10;
+      ctx.strokeStyle = '#38bdf8';
+      ctx.stroke();
+
+      // Text
+      ctx.font = 'bold 58px sans-serif';
+      ctx.fillStyle = '#0f172a';
       ctx.textAlign = 'center';
-      ctx.fillText(title, 256, 75);
-      ctx.font = '600 20px monospace';
-      ctx.fillStyle = colorHex;
-      ctx.fillText(sub, 256, 120);
+      ctx.textBaseline = 'middle';
+      ctx.fillText(`${emoji} ${name}`, 256, 90);
 
       const tex = new THREE.CanvasTexture(canvas);
       tex.needsUpdate = true;
       return tex;
     }
 
-    LANDMARKS.forEach((land) => {
-      const group = new THREE.Group();
-      group.position.copy(land.pos);
-      scene.add(group);
+    CUTE_BUILDINGS.forEach((b) => {
+      const bGroup = new THREE.Group();
+      bGroup.position.copy(b.pos);
+      bGroup.userData = { buildingId: b.id, name: b.name };
+      scene.add(bGroup);
 
-      let coreMesh = null;
-      let haloRings = [];
+      // Unique architecture per building:
+      let mainBody;
+      let roof;
 
-      // 1. EDUCATION: University Spire with crystalline wings
-      if (land.id === 'education') {
-        const spire = new THREE.Mesh(
-          new THREE.ConeGeometry(4.5, 42, 6),
-          new THREE.MeshStandardMaterial({
-            color: 0x071e3d,
-            emissive: land.color,
-            emissiveIntensity: 0.35,
-            metalness: 0.8
-          })
+      if (b.id === 'education') {
+        // Cute university with clock/spire & arched wings
+        mainBody = new THREE.Mesh(
+          new THREE.BoxGeometry(10, 14, 9),
+          new THREE.MeshStandardMaterial({ color: b.color, roughness: 0.4 })
         );
-        spire.position.y = 21;
-        group.add(spire);
-        coreMesh = spire;
-
-        // Wing monoliths
-        for (let sign of [-1, 1]) {
-          const wing = new THREE.Mesh(
-            new THREE.BoxGeometry(2.5, 26, 4.5),
-            new THREE.MeshStandardMaterial({ color: 0x061426, metalness: 0.8 })
-          );
-          wing.position.set(sign * 7.5, 13, 0);
-          group.add(wing);
-        }
-
-        // Revolving rings
-        const ring = new THREE.Mesh(
-          new THREE.TorusGeometry(8, 0.15, 16, 48),
-          new THREE.MeshBasicMaterial({ color: land.color })
+        mainBody.position.y = 7;
+        roof = new THREE.Mesh(
+          new THREE.ConeGeometry(5.5, 8, 4),
+          new THREE.MeshStandardMaterial({ color: b.roofColor, roughness: 0.3 })
         );
-        ring.position.y = 26;
-        ring.rotation.x = Math.PI / 3;
-        group.add(ring);
-        haloRings.push(ring);
-      }
+        roof.position.y = 18;
+        roof.rotation.y = Math.PI / 4;
 
-      // 2. PROJECTS: Giant Technology Research Facility with dual arches & bridge
-      else if (land.id === 'projects') {
-        const pillar1 = new THREE.Mesh(
-          new THREE.BoxGeometry(5, 46, 5),
-          new THREE.MeshStandardMaterial({ color: 0x081c24, emissive: land.color, emissiveIntensity: 0.3 })
+        // Graduation cap ornament
+        const cap = new THREE.Mesh(
+          new THREE.BoxGeometry(3.5, 0.4, 3.5),
+          new THREE.MeshStandardMaterial({ color: 0x1e1b4b })
         );
-        pillar1.position.set(-7, 23, 0);
-        group.add(pillar1);
-
-        const pillar2 = new THREE.Mesh(
-          new THREE.BoxGeometry(5, 46, 5),
-          new THREE.MeshStandardMaterial({ color: 0x081c24, emissive: land.color, emissiveIntensity: 0.3 })
+        cap.position.y = 22.5;
+        bGroup.add(cap);
+      } else if (b.id === 'projects') {
+        // Creative tech studio: staggered pastel cubes & screens
+        mainBody = new THREE.Mesh(
+          new THREE.BoxGeometry(11, 12, 10),
+          new THREE.MeshStandardMaterial({ color: b.color, roughness: 0.4 })
         );
-        pillar2.position.set(7, 23, 0);
-        group.add(pillar2);
-
-        const bridge = new THREE.Mesh(
-          new THREE.BoxGeometry(20, 4, 6),
-          new THREE.MeshStandardMaterial({ color: 0x0b2533, metalness: 0.85 })
+        mainBody.position.y = 6;
+        roof = new THREE.Mesh(
+          new THREE.BoxGeometry(9, 4, 8),
+          new THREE.MeshStandardMaterial({ color: b.roofColor, roughness: 0.3 })
         );
-        bridge.position.set(0, 38, 0);
-        group.add(bridge);
-        coreMesh = bridge;
+        roof.position.y = 14;
 
-        // Pulsing floating energy core in the center
-        const core = new THREE.Mesh(
-          new THREE.IcosahedronGeometry(3.5, 1),
-          new THREE.MeshBasicMaterial({ color: 0x00ffcc, wireframe: true })
+        // Giant floating code screen
+        const screen = new THREE.Mesh(
+          new THREE.BoxGeometry(4.5, 2.8, 0.4),
+          new THREE.MeshBasicMaterial({ color: 0x38bdf8 })
         );
-        core.position.set(0, 24, 0);
-        group.add(core);
-        haloRings.push(core);
-      }
-
-      // 3. TECH LAB: Glowing Laboratory with floating polyhedrons
-      else if (land.id === 'lab') {
-        const base = new THREE.Mesh(
-          new THREE.CylinderGeometry(7, 9, 14, 6),
-          new THREE.MeshStandardMaterial({ color: 0x120822, metalness: 0.85 })
+        screen.position.set(0, 18, 0);
+        bGroup.add(screen);
+      } else if (b.id === 'lab') {
+        // Cute science dome laboratory
+        mainBody = new THREE.Mesh(
+          new THREE.CylinderGeometry(5.5, 6.0, 10, 24),
+          new THREE.MeshStandardMaterial({ color: b.color, roughness: 0.4 })
         );
-        base.position.y = 7;
-        group.add(base);
-
-        const crystal = new THREE.Mesh(
-          new THREE.OctahedronGeometry(5.2),
-          new THREE.MeshStandardMaterial({
-            color: 0xa855f7,
-            emissive: land.color,
-            emissiveIntensity: 0.5,
-            wireframe: true
-          })
+        mainBody.position.y = 5;
+        roof = new THREE.Mesh(
+          new THREE.SphereGeometry(5.2, 24, 16, 0, Math.PI * 2, 0, Math.PI / 2),
+          new THREE.MeshStandardMaterial({ color: b.roofColor, roughness: 0.2, transparent: true, opacity: 0.9 })
         );
-        crystal.position.y = 23;
-        group.add(crystal);
-        coreMesh = crystal;
-        haloRings.push(crystal);
-      }
-
-      // 4. EXPERIENCE: Corporate Skyscraper with stepped sky-terraces
-      else if (land.id === 'experience') {
-        const tower = new THREE.Mesh(
-          new THREE.BoxGeometry(9, 48, 9),
-          new THREE.MeshStandardMaterial({
-            color: 0x051a24,
-            emissive: land.color,
-            emissiveIntensity: 0.25,
-            metalness: 0.85
-          })
+        roof.position.y = 10;
+      } else if (b.id === 'experience') {
+        // Stepped cute office tower
+        mainBody = new THREE.Mesh(
+          new THREE.BoxGeometry(8.5, 16, 8.5),
+          new THREE.MeshStandardMaterial({ color: b.color, roughness: 0.4 })
         );
-        tower.position.y = 24;
-        group.add(tower);
-        coreMesh = tower;
-
-        for (let i = 0; i < 3; i++) {
-          const terrace = new THREE.Mesh(
-            new THREE.BoxGeometry(11 - i * 1.5, 1.5, 11 - i * 1.5),
-            new THREE.MeshBasicMaterial({ color: land.color })
-          );
-          terrace.position.y = 16 + i * 12;
-          group.add(terrace);
-        }
-      }
-
-      // 5. ACHIEVEMENTS: Vault & Trophy Dome
-      else if (land.id === 'vault') {
-        const dome = new THREE.Mesh(
-          new THREE.SphereGeometry(8, 16, 12, 0, Math.PI * 2, 0, Math.PI / 2),
-          new THREE.MeshStandardMaterial({
-            color: 0x241804,
-            emissive: land.color,
-            emissiveIntensity: 0.35,
-            wireframe: true
-          })
+        mainBody.position.y = 8;
+        roof = new THREE.Mesh(
+          new THREE.BoxGeometry(6.5, 3.5, 6.5),
+          new THREE.MeshStandardMaterial({ color: b.roofColor, roughness: 0.3 })
         );
-        group.add(dome);
+        roof.position.y = 17.5;
+      } else if (b.id === 'vault') {
+        // Trophy tower with golden cup on top
+        mainBody = new THREE.Mesh(
+          new THREE.CylinderGeometry(5.0, 5.8, 12, 16),
+          new THREE.MeshStandardMaterial({ color: b.color, roughness: 0.4 })
+        );
+        mainBody.position.y = 6;
+        roof = new THREE.Mesh(
+          new THREE.ConeGeometry(5.2, 5, 16),
+          new THREE.MeshStandardMaterial({ color: b.roofColor, roughness: 0.3 })
+        );
+        roof.position.y = 14.5;
 
+        // Big golden trophy on roof
         const trophy = new THREE.Mesh(
-          new THREE.DodecahedronGeometry(3.5),
-          new THREE.MeshBasicMaterial({ color: 0xf59e0b })
+          new THREE.DodecahedronGeometry(2.0),
+          new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.7, roughness: 0.2 })
         );
-        trophy.position.y = 12;
-        group.add(trophy);
-        coreMesh = trophy;
-        haloRings.push(trophy);
-      }
-
-      // 6. CERTIFICATIONS: Holographic Cylinder Databank
-      else if (land.id === 'certifications') {
-        const cyl = new THREE.Mesh(
-          new THREE.CylinderGeometry(5, 5, 34, 16),
-          new THREE.MeshStandardMaterial({
-            color: 0x041822,
-            emissive: land.color,
-            emissiveIntensity: 0.3,
-            metalness: 0.85
-          })
+        trophy.position.y = 18.5;
+        bGroup.add(trophy);
+      } else if (b.id === 'certifications') {
+        // Cute library / archive with column portico
+        mainBody = new THREE.Mesh(
+          new THREE.BoxGeometry(9.5, 11, 8.5),
+          new THREE.MeshStandardMaterial({ color: b.color, roughness: 0.4 })
         );
-        cyl.position.y = 17;
-        group.add(cyl);
-        coreMesh = cyl;
+        mainBody.position.y = 5.5;
+        roof = new THREE.Mesh(
+          new THREE.ConeGeometry(6.0, 4.5, 4),
+          new THREE.MeshStandardMaterial({ color: b.roofColor, roughness: 0.3 })
+        );
+        roof.position.y = 13.2;
+        roof.rotation.y = Math.PI / 4;
+      } else {
+        // Contact communication tower with antenna
+        mainBody = new THREE.Mesh(
+          new THREE.CylinderGeometry(4.2, 5.0, 13, 16),
+          new THREE.MeshStandardMaterial({ color: b.color, roughness: 0.4 })
+        );
+        mainBody.position.y = 6.5;
+        roof = new THREE.Mesh(
+          new THREE.ConeGeometry(4.4, 5, 16),
+          new THREE.MeshStandardMaterial({ color: b.roofColor, roughness: 0.3 })
+        );
+        roof.position.y = 15.5;
 
-        for (let k = 0; k < 3; k++) {
-          const r = new THREE.Mesh(
-            new THREE.TorusGeometry(6.5, 0.15, 12, 32),
-            new THREE.MeshBasicMaterial({ color: land.color })
-          );
-          r.position.y = 10 + k * 8;
-          r.rotation.x = Math.PI / 2;
-          group.add(r);
-          haloRings.push(r);
-        }
-      }
-
-      // 7. CONTACT: High-Altitude Transmission Spire
-      else if (land.id === 'contact') {
+        // Antenna mast
         const mast = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.6, 2.5, 46, 8),
-          new THREE.MeshStandardMaterial({
-            color: 0x220914,
-            emissive: land.color,
-            emissiveIntensity: 0.4
-          })
+          new THREE.CylinderGeometry(0.3, 0.3, 7, 8),
+          new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.8 })
         );
-        mast.position.y = 23;
-        group.add(mast);
-        coreMesh = mast;
+        mast.position.y = 20.5;
+        bGroup.add(mast);
 
         const dish = new THREE.Mesh(
-          new THREE.CylinderGeometry(3.2, 0.4, 0.8, 16),
-          new THREE.MeshBasicMaterial({ color: land.color })
+          new THREE.SphereGeometry(1.2, 16, 8, 0, Math.PI),
+          new THREE.MeshStandardMaterial({ color: 0xffffff })
         );
-        dish.position.y = 38;
-        dish.rotation.x = Math.PI / 4;
-        group.add(dish);
-        haloRings.push(dish);
+        dish.position.y = 23;
+        dish.rotation.x = Math.PI / 2;
+        bGroup.add(dish);
       }
 
-      // Marquee Neon Sign
-      const marqueeTex = createMarqueeTexture(land.name, land.title, land.labelColor);
-      const marquee = new THREE.Mesh(
-        new THREE.PlaneGeometry(10, 3.2),
-        new THREE.MeshBasicMaterial({ map: marqueeTex, side: THREE.DoubleSide })
+      mainBody.castShadow = true;
+      mainBody.receiveShadow = true;
+      bGroup.add(mainBody);
+
+      if (roof) {
+        roof.castShadow = true;
+        bGroup.add(roof);
+      }
+
+      // Windows (warm lit little square windows)
+      for (let w = 0; w < 4; w++) {
+        const win = new THREE.Mesh(
+          new THREE.PlaneGeometry(1.4, 1.4),
+          new THREE.MeshBasicMaterial({ color: 0xffedd5 })
+        );
+        win.position.set(-2.2 + (w % 2) * 4.4, 4 + Math.floor(w / 2) * 4, 4.8);
+        bGroup.add(win);
+      }
+
+      // LARGE, READABLE FLOATING SIGN FACING THE PLAZA
+      const signTex = makeSignCanvas(b.emoji, b.name);
+      const signMesh = new THREE.Mesh(
+        new THREE.PlaneGeometry(8.5, 3.0),
+        new THREE.MeshBasicMaterial({ map: signTex, transparent: true, side: THREE.DoubleSide })
       );
-      marquee.position.set(0, 18, 6.5);
-      group.add(marquee);
+      signMesh.position.set(0, 19.5, 0);
 
-      // Dedicated Beacon Point Light
-      const beaconLight = new THREE.PointLight(land.color, 2, 45, 1.2);
-      beaconLight.position.set(0, 14, 0);
-      group.add(beaconLight);
+      // Rotate sign to always face the central plaza
+      const angleToCenter = Math.atan2(-b.pos.x, -b.pos.z);
+      signMesh.rotation.y = angleToCenter;
+      bGroup.add(signMesh);
 
-      landmarksMap[land.id] = {
-        group,
-        coreMesh,
-        haloRings,
-        beaconLight,
-        data: land
+      // Large invisible click/tap hitbox for easy selection
+      const hitBox = new THREE.Mesh(
+        new THREE.BoxGeometry(14, 24, 14),
+        new THREE.MeshBasicMaterial({ visible: false })
+      );
+      hitBox.position.y = 12;
+      hitBox.userData = { buildingId: b.id, name: b.name };
+      bGroup.add(hitBox);
+      interactiveMeshes.push(hitBox);
+
+      buildingGroups[b.id] = { group: bGroup, sign: signMesh, basePos: b.pos.clone() };
+    });
+
+    stateRef.current.interactiveMeshes = interactiveMeshes;
+    stateRef.current.buildingGroups = buildingGroups;
+
+    // --- CUTE STYLIZED TREES & FLOWERS AROUND ROADS ---
+    const treeGeo = new THREE.DodecahedronGeometry(1.8, 1);
+    const trunkGeo = new THREE.CylinderGeometry(0.35, 0.45, 2.2, 8);
+    const trunkMat = new THREE.MeshStandardMaterial({ color: 0x854d0e, roughness: 0.8 });
+
+    for (let t = 0; t < 28; t++) {
+      const angle = (t / 28) * Math.PI * 2 + Math.random() * 0.15;
+      const dist = 20 + Math.random() * 32;
+      const x = Math.sin(angle) * dist;
+      const z = Math.cos(angle) * dist;
+
+      // Don't collide with buildings
+      const nearB = CUTE_BUILDINGS.some((b) => b.pos.distanceTo(new THREE.Vector3(x, 0, z)) < 8);
+      if (nearB) continue;
+
+      const tree = new THREE.Group();
+      tree.position.set(x, 0, z);
+
+      const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+      trunk.position.y = 1.1;
+      trunk.castShadow = true;
+      tree.add(trunk);
+
+      // Cherry blossom pink or mint green foliage
+      const leafColor = t % 3 === 0 ? 0xfbcfe8 : 0x86efac;
+      const leaves = new THREE.Mesh(
+        treeGeo,
+        new THREE.MeshStandardMaterial({ color: leafColor, roughness: 0.6 })
+      );
+      leaves.position.y = 2.8;
+      leaves.castShadow = true;
+      tree.add(leaves);
+
+      scene.add(tree);
+    }
+
+    // --- CUTE CLOUDS DRIFTING SLOWLY ---
+    const clouds = [];
+    for (let c = 0; c < 8; c++) {
+      const cloud = new THREE.Group();
+      for (let s = 0; s < 4; s++) {
+        const puff = new THREE.Mesh(
+          new THREE.SphereGeometry(3.5 + Math.random() * 2, 12, 12),
+          new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 })
+        );
+        puff.position.set(s * 3.5 - 5, Math.random() * 1.5, Math.random() * 2);
+        cloud.add(puff);
+      }
+      cloud.position.set(
+        (Math.random() - 0.5) * 160,
+        35 + Math.random() * 18,
+        (Math.random() - 0.5) * 160
+      );
+      cloud.userData = { speed: 0.08 + Math.random() * 0.08 };
+      scene.add(cloud);
+      clouds.push(cloud);
+    }
+    stateRef.current.clouds = clouds;
+
+    // --- LITTLE PASTEL CARS MOVING IN LOOP ---
+    const cars = [];
+    for (let k = 0; k < 4; k++) {
+      const carGroup = new THREE.Group();
+      const carColor = [0x38bdf8, 0xf472b6, 0xfacc15, 0x4ade80][k];
+
+      const carBody = new THREE.Mesh(
+        new THREE.BoxGeometry(2.0, 1.0, 3.5),
+        new THREE.MeshStandardMaterial({ color: carColor, roughness: 0.4 })
+      );
+      carBody.position.y = 0.8;
+      carGroup.add(carBody);
+
+      const cabin = new THREE.Mesh(
+        new THREE.BoxGeometry(1.6, 0.9, 1.8),
+        new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.2 })
+      );
+      cabin.position.set(0, 1.7, -0.2);
+      carGroup.add(cabin);
+
+      carGroup.userData = {
+        radius: 44,
+        angle: (k * Math.PI) / 2,
+        speed: 0.35
       };
-    });
-
-    stateRef.current.landmarksMap = landmarksMap;
-
-    // --- PROCEDURAL SURROUNDING SKYSCRAPERS (DENSE HIGH-TECH METROPOLIS) ---
-    const buildingMat = new THREE.MeshStandardMaterial({
-      color: 0x060c18,
-      roughness: 0.35,
-      metalness: 0.85
-    });
-
-    for (let b = 0; b < 65; b++) {
-      const angle = (b / 65) * Math.PI * 2 + Math.random() * 0.1;
-      const dist = 38 + Math.random() * 95;
-      const x = Math.cos(angle) * dist;
-      const z = Math.sin(angle) * dist;
-
-      // Don't overlap landmark plazas
-      const overlapsLandmark = LANDMARKS.some((l) => l.pos.distanceTo(new THREE.Vector3(x, 0, z)) < 18);
-      if (overlapsLandmark) continue;
-
-      const w = 7 + Math.random() * 8;
-      const d = 7 + Math.random() * 8;
-      const h = 20 + Math.random() * 60;
-
-      const box = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), buildingMat);
-      box.position.set(x, h / 2, z);
-      scene.add(box);
-
-      // Glowing edge line
-      const edges = new THREE.EdgesGeometry(box.geometry);
-      const line = new THREE.LineSegments(
-        edges,
-        new THREE.LineBasicMaterial({
-          color: b % 3 === 0 ? 0x00ffcc : b % 3 === 1 ? 0x38bdf8 : 0xa855f7,
-          transparent: true,
-          opacity: 0.35
-        })
-      );
-      line.position.copy(box.position);
-      scene.add(line);
+      scene.add(carGroup);
+      cars.push(carGroup);
     }
+    stateRef.current.cars = cars;
 
-    // --- FLYING TRAFFIC ALONG AIR HIGHWAYS ---
-    const flyingTraffic = [];
-    for (let f = 0; f < 24; f++) {
-      const isRed = f % 2 === 0;
-      const car = new THREE.Mesh(
-        new THREE.BoxGeometry(1.0, 0.4, 3.0),
-        new THREE.MeshBasicMaterial({ color: isRed ? 0xff0055 : 0x00ffcc })
-      );
-      const radius = 45 + (f % 5) * 16;
-      const altitude = 18 + (f % 6) * 6;
-      const speed = (0.2 + (f % 3) * 0.1) * (f % 2 === 0 ? 1 : -1);
-      car.userData = { radius, altitude, speed, angle: Math.random() * Math.PI * 2 };
-      scene.add(car);
-      flyingTraffic.push(car);
-    }
-    stateRef.current.flyingTraffic = flyingTraffic;
+    // --- RAYCASTING & CLICK / HOVER HANDLING ---
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
 
-    // --- CYBER RAIN & FLOATING MOTES ---
-    const moteCount = 600;
-    const moteGeo = new THREE.BufferGeometry();
-    const motePos = new Float32Array(moteCount * 3);
-    for (let m = 0; m < moteCount * 3; m += 3) {
-      motePos[m] = (Math.random() - 0.5) * 240;
-      motePos[m + 1] = Math.random() * 80;
-      motePos[m + 2] = (Math.random() - 0.5) * 240;
-    }
-    moteGeo.setAttribute('position', new THREE.BufferAttribute(motePos, 3));
-    const motes = new THREE.Points(
-      moteGeo,
-      new THREE.PointsMaterial({
-        color: 0x00ffcc,
-        size: 0.75,
-        transparent: true,
-        opacity: 0.6,
-        blending: THREE.AdditiveBlending
-      })
-    );
-    scene.add(motes);
+    const getRaycastBuilding = (event) => {
+      const rect = container.getBoundingClientRect();
+      mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 
-    // --- KEYBOARD & MOUSE TRAVEL CONTROLLER ---
-    const handleKeyDown = (e) => {
-      const key = e.key.toLowerCase();
-      if (key === 'w' || key === 'arrowup') stateRef.current.keys.w = true;
-      if (key === 's' || key === 'arrowdown') stateRef.current.keys.s = true;
-      if (key === 'a' || key === 'arrowleft') stateRef.current.keys.a = true;
-      if (key === 'd' || key === 'arrowright') stateRef.current.keys.d = true;
-      if (e.shiftKey) stateRef.current.keys.shift = true;
-
-      // Press 'E' to enter nearby building
-      if (key === 'e' && stateRef.current.nearbyBuildingId) {
-        soundManager.playClick();
-        onSelectDistrict(stateRef.current.nearbyBuildingId);
+      raycaster.setFromCamera(mouse, camera);
+      const hits = raycaster.intersectObjects(stateRef.current.interactiveMeshes, true);
+      if (hits.length > 0) {
+        return hits[0].object.userData.buildingId;
       }
-    };
-
-    const handleKeyUp = (e) => {
-      const key = e.key.toLowerCase();
-      if (key === 'w' || key === 'arrowup') stateRef.current.keys.w = false;
-      if (key === 's' || key === 'arrowdown') stateRef.current.keys.s = false;
-      if (key === 'a' || key === 'arrowleft') stateRef.current.keys.a = false;
-      if (key === 'd' || key === 'arrowright') stateRef.current.keys.d = false;
-      if (!e.shiftKey) stateRef.current.keys.shift = false;
+      return null;
     };
 
     const handlePointerDown = (e) => {
@@ -558,29 +666,46 @@ export default function City3D({
     };
 
     const handlePointerMove = (e) => {
-      if (stateRef.current.isDragging) {
+      // Dragging orbits the camera gently around the plaza
+      if (stateRef.current.isDragging && (!activeBuilding || activeBuilding === 'city')) {
         const dx = e.clientX - stateRef.current.dragStart.x;
         const dy = e.clientY - stateRef.current.dragStart.y;
-        stateRef.current.player.yaw -= dx * 0.004;
-        stateRef.current.player.pitch = Math.max(
-          -0.6,
-          Math.min(0.6, stateRef.current.player.pitch - dy * 0.003)
+        stateRef.current.orbitAngle += dx * 0.006;
+        stateRef.current.orbitPitch = Math.max(
+          0.25,
+          Math.min(1.1, stateRef.current.orbitPitch + dy * 0.004)
         );
         stateRef.current.dragStart = { x: e.clientX, y: e.clientY };
       }
+
+      // Check hover
+      const bId = getRaycastBuilding(e);
+      if (bId !== stateRef.current.hoveredId) {
+        stateRef.current.hoveredId = bId;
+        container.style.cursor = bId ? 'pointer' : 'default';
+        if (bId) soundManager.playHover();
+        onHoverBuilding(bId);
+      }
     };
 
-    const handlePointerUp = () => {
+    const handlePointerUp = (e) => {
       stateRef.current.isDragging = false;
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
+    const handleClick = (e) => {
+      const bId = getRaycastBuilding(e);
+      if (bId) {
+        soundManager.playClick();
+        onSelectBuilding(bId);
+      }
+    };
+
     container.addEventListener('pointerdown', handlePointerDown);
     window.addEventListener('pointermove', handlePointerMove);
     window.addEventListener('pointerup', handlePointerUp);
+    container.addEventListener('click', handleClick);
 
-    // --- ANIMATION LOOP ---
+    // --- ANIMATION LOOP (SMOOTH 60 FPS) ---
     let frameId;
     let clock = new THREE.Clock();
 
@@ -589,142 +714,58 @@ export default function City3D({
       const delta = Math.min(clock.getDelta(), 0.1);
       const time = clock.getElapsedTime();
 
-      // Animate halo rings
-      Object.values(stateRef.current.landmarksMap).forEach((item) => {
-        item.haloRings.forEach((r, idx) => {
-          r.rotation.y = time * (0.8 + idx * 0.3);
-          r.rotation.z = Math.sin(time) * 0.2;
-        });
+      // Guide character animation
+      if (stateRef.current.guideCharacter?.userData?.anim) {
+        stateRef.current.guideCharacter.userData.anim.update(delta);
+      }
+
+      // Gem rotation on fountain
+      gem.rotation.y = time * 0.8;
+      gem.position.y = 3.0 + Math.sin(time * 2) * 0.15;
+
+      // Drifting clouds
+      stateRef.current.clouds.forEach((cl) => {
+        cl.position.x += cl.userData.speed;
+        if (cl.position.x > 80) cl.position.x = -80;
       });
 
-      // Animate flying traffic
-      stateRef.current.flyingTraffic.forEach((car) => {
+      // Moving cars along perimeter loop
+      stateRef.current.cars.forEach((car) => {
         car.userData.angle += car.userData.speed * delta;
         const rad = car.userData.radius;
-        car.position.x = Math.cos(car.userData.angle) * rad;
-        car.position.z = Math.sin(car.userData.angle) * rad;
-        car.position.y = car.userData.altitude;
-        car.rotation.y = -car.userData.angle + (car.userData.speed > 0 ? 0 : Math.PI);
+        car.position.x = Math.sin(car.userData.angle) * rad;
+        car.position.z = Math.cos(car.userData.angle) * rad;
+        car.rotation.y = car.userData.angle + Math.PI / 2;
       });
 
-      // Animate floating motes
-      const mArray = moteGeo.attributes.position.array;
-      for (let p = 0; p < moteCount; p++) {
-        mArray[p * 3 + 1] += 0.15;
-        if (mArray[p * 3 + 1] > 80) mArray[p * 3 + 1] = 0;
+      // Hover feedback: smooth scale on hovered building
+      Object.entries(stateRef.current.buildingGroups).forEach(([id, item]) => {
+        const isHovered = stateRef.current.hoveredId === id;
+        const targetScale = isHovered ? 1.05 : 1.0;
+        item.group.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), 0.1);
+
+        // Sign gentle float
+        item.sign.position.y = 19.5 + Math.sin(time * 2 + (id.length)) * 0.25;
+      });
+
+      // Camera Orbit logic in wide City view
+      if (!activeBuilding || activeBuilding === 'city') {
+        const orbitDist = 52;
+        const targetX = Math.sin(stateRef.current.orbitAngle) * orbitDist * Math.cos(stateRef.current.orbitPitch);
+        const targetZ = Math.cos(stateRef.current.orbitAngle) * orbitDist * Math.cos(stateRef.current.orbitPitch);
+        const targetY = 16 + Math.sin(stateRef.current.orbitPitch) * 28;
+
+        stateRef.current.desiredCamPos.set(targetX, targetY, targetZ);
+        stateRef.current.camTarget.set(0, 3, 0);
       }
-      moteGeo.attributes.position.needsUpdate = true;
 
-      // ========================================================
-      // INTRO CINEMATIC vs OPEN STREET TRAVEL vs BUILDING INTERIOR
-      // ========================================================
-      if (isIntroPlaying) {
-        // Dramatic establishing camera moving toward city entrance
-        const introProgress = Math.min(time / 6.0, 1.0);
-        camera.position.x = Math.sin(time * 0.2) * 20;
-        camera.position.y = 12 + Math.cos(time * 0.2) * 4;
-        camera.position.z = 32 - introProgress * 6;
-        camera.lookAt(0, 3, 16);
+      // Smooth camera interpolation
+      const lerpSpeed = reducedMotion ? 0.15 : 0.055;
+      stateRef.current.currentCamPos.lerp(stateRef.current.desiredCamPos, lerpSpeed);
+      stateRef.current.currentCamTarget.lerp(stateRef.current.camTarget, lerpSpeed);
 
-        if (character.userData.anim) {
-          character.userData.anim.update(delta, false, 0);
-        }
-      } else if (activeDistrict !== 'city') {
-        // Inside building: Smooth cinematic camera focus on that building
-        const targetLandmark = LANDMARKS.find((l) => l.id === activeDistrict);
-        if (targetLandmark) {
-          const desiredCamPos = targetLandmark.pos.clone().add(new THREE.Vector3(0, 18, 22));
-          const desiredLookAt = targetLandmark.pos.clone().add(new THREE.Vector3(0, 14, 0));
-          camera.position.lerp(desiredCamPos, 0.04);
-          camera.lookAt(desiredLookAt);
-        }
-      } else {
-        // FREE STREET EXPLORATION MODE (WASD + MOUSE)
-        const p = stateRef.current.player;
-        const keys = stateRef.current.keys;
-
-        // Calculate move direction relative to camera yaw
-        const moveDir = new THREE.Vector3();
-        if (keys.w) moveDir.z -= 1;
-        if (keys.s) moveDir.z += 1;
-        if (keys.a) moveDir.x -= 1;
-        if (keys.d) moveDir.x += 1;
-
-        const isMoving = moveDir.lengthSq() > 0;
-        p.isMoving = isMoving;
-
-        if (isMoving) {
-          moveDir.normalize();
-          moveDir.applyAxisAngle(new THREE.Vector3(0, 1, 0), p.yaw);
-
-          const curSpeed = keys.shift ? p.speed * 1.8 : p.speed;
-          p.pos.x += moveDir.x * curSpeed * delta;
-          p.pos.z += moveDir.z * curSpeed * delta;
-
-          // Keep player inside city bounds
-          p.pos.x = Math.max(-120, Math.min(120, p.pos.x));
-          p.pos.z = Math.max(-120, Math.min(120, p.pos.z));
-        }
-
-        // Update player character in third-person view
-        character.position.set(p.pos.x, 0, p.pos.z);
-        character.rotation.y = p.yaw + Math.PI;
-
-        if (character.userData.anim) {
-          character.userData.anim.setSitting(false);
-          character.userData.anim.update(delta, isMoving, keys.shift ? 2 : 1);
-        }
-
-        // Third-person camera trailing player
-        const camDist = 12;
-        const camHeight = 5.5 + Math.sin(p.pitch) * 4;
-        const targetCamX = p.pos.x + Math.sin(p.yaw) * camDist;
-        const targetCamZ = p.pos.z + Math.cos(p.yaw) * camDist;
-
-        camera.position.x = THREE.MathUtils.lerp(camera.position.x, targetCamX, 0.1);
-        camera.position.y = THREE.MathUtils.lerp(camera.position.y, camHeight, 0.1);
-        camera.position.z = THREE.MathUtils.lerp(camera.position.z, targetCamZ, 0.1);
-
-        const lookTarget = new THREE.Vector3(p.pos.x, 2.8, p.pos.z);
-        camera.lookAt(lookTarget);
-
-        // --- PROXIMITY DETECTION TO 7 LANDMARKS ---
-        let closestBuilding = null;
-        let minDistance = 26; // detection radius
-
-        LANDMARKS.forEach((land) => {
-          const dist = p.pos.distanceTo(land.pos);
-          if (dist < minDistance) {
-            closestBuilding = land;
-            minDistance = dist;
-          }
-
-          // Light intensity reacts to proximity
-          const mapItem = stateRef.current.landmarksMap[land.id];
-          if (mapItem?.beaconLight) {
-            const proximityFactor = Math.max(0, 1 - dist / 50);
-            mapItem.beaconLight.intensity = 2.0 + proximityFactor * 4.0;
-          }
-        });
-
-        if (closestBuilding) {
-          if (stateRef.current.nearbyBuildingId !== closestBuilding.id) {
-            stateRef.current.nearbyBuildingId = closestBuilding.id;
-            soundManager.playHover();
-            onNearbyBuilding({
-              id: closestBuilding.id,
-              name: closestBuilding.name,
-              title: closestBuilding.title,
-              dist: Math.round(minDistance)
-            });
-          }
-        } else {
-          if (stateRef.current.nearbyBuildingId !== null) {
-            stateRef.current.nearbyBuildingId = null;
-            onNearbyBuilding(null);
-          }
-        }
-      }
+      camera.position.copy(stateRef.current.currentCamPos);
+      camera.lookAt(stateRef.current.currentCamTarget);
 
       renderer.render(scene, camera);
     };
@@ -742,18 +783,17 @@ export default function City3D({
 
     return () => {
       cancelAnimationFrame(frameId);
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('keyup', handleKeyUp);
       container.removeEventListener('pointerdown', handlePointerDown);
       window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('pointerup', handlePointerUp);
+      container.removeEventListener('click', handleClick);
       window.removeEventListener('resize', handleResize);
       if (renderer.domElement && container.contains(renderer.domElement)) {
         container.removeChild(renderer.domElement);
       }
       renderer.dispose();
     };
-  }, [reducedMotion, isIntroPlaying, activeDistrict, onNearbyBuilding, onSelectDistrict]);
+  }, [reducedMotion, onSelectBuilding, onHoverBuilding, activeBuilding]);
 
   return (
     <div

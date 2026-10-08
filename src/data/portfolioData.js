@@ -3,9 +3,11 @@ export const portfolioData = {
     name: "Fathima Najha K",
     title: "Computer Science Engineer",
     role: "Creative Developer & Systems Enthusiast",
-    callsign: "FATHIMA.OS",
-    tagline: "Exploring technology, one system at a time.",
-    subtagline: "Building ideas in code.",
+    callsign: "FATHIMA NAJHA.OS",
+    compactBrand: "NAJHA.OS",
+    welcomeTagline: "Welcome to my little digital city.",
+    tagline: "Explore my journey, projects and skills.",
+    subtagline: "Building ideas in code with curiosity & care.",
     location: "Calicut, Kerala, India",
     institution: "AWH Engineering College, Kuttikkattoor",
     email: "fathimanajha006@gmail.com",
@@ -401,13 +403,13 @@ export const portfolioData = {
   ],
 
   districts: [
-    { id: "city", label: "CITY STREETS", name: "DIGITAL CITY", subtitle: "Free Street Exploration", icon: "Compass" },
-    { id: "education", label: "EDUCATION", name: "EDUCATION TOWER", subtitle: "Futuristic University Tower", icon: "GraduationCap" },
-    { id: "projects", label: "PROJECTS", name: "PROJECTS RESEARCH FACILITY", subtitle: "Interactive Systems Lab", icon: "Code2" },
-    { id: "lab", label: "TECH LAB", name: "TECH LAB FACILITY", subtitle: "Glowing Research Lab", icon: "Cpu" },
-    { id: "experience", label: "EXPERIENCE", name: "EXPERIENCE TOWER", subtitle: "Corporate Skyscraper", icon: "Briefcase" },
-    { id: "vault", label: "ACHIEVEMENTS", name: "ACHIEVEMENT VAULT", subtitle: "Trophy & Vault Tower", icon: "Trophy" },
-    { id: "certifications", label: "CERTIFICATIONS", name: "CERTIFICATION ARCHIVE", subtitle: "Holographic Archive", icon: "FileCheck" },
-    { id: "contact", label: "CONTACT", name: "COMMUNICATION TOWER", subtitle: "Transmission Spire", icon: "Radio" }
+    { id: "city", label: "CITY PLAZA", name: "CENTRAL PLAZA", subtitle: "Miniature City Center", icon: "Home", emoji: "🏠", color: "#38bdf8" },
+    { id: "education", label: "EDUCATION", name: "EDUCATION TOWER", subtitle: "Cute University Tower", icon: "GraduationCap", emoji: "🎓", color: "#818cf8" },
+    { id: "projects", label: "PROJECTS", name: "PROJECTS STUDIO", subtitle: "Creative Tech Studio", icon: "Code2", emoji: "💻", color: "#06b6d4" },
+    { id: "lab", label: "TECH LAB", name: "TECH LAB", subtitle: "Cozy Science Lab", icon: "FlaskConical", emoji: "🧪", color: "#a855f7" },
+    { id: "experience", label: "EXPERIENCE", name: "EXPERIENCE TOWER", subtitle: "Modern Office Tower", icon: "Briefcase", emoji: "💼", color: "#fb923c" },
+    { id: "vault", label: "ACHIEVEMENTS", name: "ACHIEVEMENTS TOWER", subtitle: "Golden Trophy Tower", icon: "Trophy", emoji: "🏆", color: "#eab308" },
+    { id: "certifications", label: "CERTIFICATIONS", name: "CERTIFICATION ARCHIVE", subtitle: "Cute Library Archive", icon: "FileCheck", emoji: "📜", color: "#10b981" },
+    { id: "contact", label: "CONTACT", name: "COMMUNICATION TOWER", subtitle: "Friendly Comms Spire", icon: "Radio", emoji: "📡", color: "#f43f5e" }
   ]
 };
