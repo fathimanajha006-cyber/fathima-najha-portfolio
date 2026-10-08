@@ -1,71 +1,130 @@
 import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
+import { createCyberCharacter, createArcadePerch } from './CyberCharacter';
 import { soundManager } from '../utils/soundManager';
 
-// District camera coordinates & target focus points
-const DISTRICT_CAMERAS = {
-  explore: { pos: new THREE.Vector3(0, 42, 88), target: new THREE.Vector3(0, 8, 0) },
-  identity: { pos: new THREE.Vector3(-28, 18, 28), target: new THREE.Vector3(-28, 14, 6) },
-  projects: { pos: new THREE.Vector3(28, 20, 28), target: new THREE.Vector3(28, 14, 6) },
-  lab: { pos: new THREE.Vector3(-32, 22, -18), target: new THREE.Vector3(-32, 14, -36) },
-  experience: { pos: new THREE.Vector3(32, 26, -18), target: new THREE.Vector3(32, 18, -36) },
-  vault: { pos: new THREE.Vector3(0, 22, -36), target: new THREE.Vector3(0, 14, -58) },
-  archive: { pos: new THREE.Vector3(-14, 16, 52), target: new THREE.Vector3(-14, 10, 28) },
-  terminal: { pos: new THREE.Vector3(16, 18, 52), target: new THREE.Vector3(16, 10, 28) }
-};
+// 7 Landmark District Coordinates & Colors in the Open City
+const LANDMARKS = [
+  {
+    id: 'education',
+    name: 'EDUCATION',
+    title: 'EDUCATION TOWER',
+    pos: new THREE.Vector3(-45, 0, 25),
+    color: 0x38bdf8,
+    labelColor: '#38bdf8'
+  },
+  {
+    id: 'projects',
+    name: 'PROJECTS',
+    title: 'PROJECTS RESEARCH FACILITY',
+    pos: new THREE.Vector3(45, 0, 25),
+    color: 0x00ffcc,
+    labelColor: '#00ffcc'
+  },
+  {
+    id: 'lab',
+    name: 'TECH LAB',
+    title: 'TECH LAB FACILITY',
+    pos: new THREE.Vector3(-48, 0, -35),
+    color: 0xa855f7,
+    labelColor: '#a855f7'
+  },
+  {
+    id: 'experience',
+    name: 'EXPERIENCE',
+    title: 'EXPERIENCE TOWER',
+    pos: new THREE.Vector3(48, 0, -35),
+    color: 0x00ffcc,
+    labelColor: '#00ffcc'
+  },
+  {
+    id: 'vault',
+    name: 'ACHIEVEMENTS',
+    title: 'ACHIEVEMENT VAULT',
+    pos: new THREE.Vector3(0, 0, -65),
+    color: 0xf59e0b,
+    labelColor: '#f59e0b'
+  },
+  {
+    id: 'certifications',
+    name: 'CERTIFICATIONS',
+    title: 'CERTIFICATION ARCHIVE',
+    pos: new THREE.Vector3(-24, 0, 65),
+    color: 0x06b6d4,
+    labelColor: '#06b6d4'
+  },
+  {
+    id: 'contact',
+    name: 'CONTACT',
+    title: 'COMMUNICATION TOWER',
+    pos: new THREE.Vector3(24, 0, 65),
+    color: 0xf43f5e,
+    labelColor: '#f43f5e'
+  }
+];
 
-export default function City3D({ activeDistrict, onSelectDistrict, reducedMotion }) {
+export default function City3D({
+  activeDistrict,
+  onSelectDistrict,
+  onNearbyBuilding,
+  reducedMotion,
+  isIntroPlaying
+}) {
   const containerRef = useRef(null);
   const stateRef = useRef({
     scene: null,
     camera: null,
     renderer: null,
-    currentPos: new THREE.Vector3(0, 42, 88),
-    currentTarget: new THREE.Vector3(0, 8, 0),
-    targetPos: new THREE.Vector3(0, 42, 88),
-    targetTarget: new THREE.Vector3(0, 8, 0),
-    interactiveObjects: [],
-    mouse: new THREE.Vector2(),
-    targetMouseParallax: new THREE.Vector2(),
-    mouseParallax: new THREE.Vector2(),
-    hoveredDistrict: null,
+    player: {
+      pos: new THREE.Vector3(0, 0, 18),
+      velocity: new THREE.Vector3(),
+      yaw: 0,
+      pitch: -0.1,
+      speed: 18,
+      isMoving: false
+    },
+    keys: { w: false, a: false, s: false, d: false, shift: false },
+    character: null,
+    arcadePerch: null,
+    landmarksMap: {},
+    animatedElements: [],
+    flyingTraffic: [],
+    nearbyBuildingId: null,
     isDragging: false,
-    dragStart: { x: 0, y: 0 },
-    orbitOffset: new THREE.Vector2(0, 0),
-    trafficStreams: [],
-    animatedObjects: []
+    dragStart: { x: 0, y: 0 }
   });
 
-  // Handle active district camera changes
+  // Handle building selection via keyboard / HUD
   useEffect(() => {
-    const config = DISTRICT_CAMERAS[activeDistrict] || DISTRICT_CAMERAS.explore;
-    stateRef.current.targetPos.copy(config.pos);
-    stateRef.current.targetTarget.copy(config.target);
-    soundManager.playWarp();
+    if (activeDistrict !== 'city') {
+      const landmark = LANDMARKS.find((l) => l.id === activeDistrict);
+      if (landmark) {
+        soundManager.playWarp();
+      }
+    }
   }, [activeDistrict]);
 
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
-    // --- SCENE SETUP ---
+    // --- THREE.JS SCENE SETUP ---
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x02040a);
-    scene.fog = new THREE.FogExp2(0x02040a, 0.012);
+    scene.background = new THREE.Color(0x020409);
+    scene.fog = new THREE.FogExp2(0x020409, 0.011);
     stateRef.current.scene = scene;
 
-    // --- CAMERA SETUP ---
+    // Camera
     const camera = new THREE.PerspectiveCamera(
-      55,
+      58,
       container.clientWidth / container.clientHeight,
       0.1,
-      1000
+      1200
     );
-    camera.position.set(0, 42, 88);
-    camera.lookAt(0, 8, 0);
+    camera.position.set(0, 8, 30);
     stateRef.current.camera = camera;
 
-    // --- RENDERER SETUP ---
+    // Renderer
     const renderer = new THREE.WebGLRenderer({
       antialias: true,
       powerPreference: 'high-performance',
@@ -73,543 +132,424 @@ export default function City3D({ activeDistrict, onSelectDistrict, reducedMotion
     });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setSize(container.clientWidth, container.clientHeight);
-    renderer.shadowMap.enabled = false; // keep fast 60fps
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.25;
+    renderer.toneMappingExposure = 1.3;
     container.appendChild(renderer.domElement);
     stateRef.current.renderer = renderer;
 
     // --- LIGHTING ---
-    const ambientLight = new THREE.AmbientLight(0x0b1528, 2.5);
+    const ambientLight = new THREE.AmbientLight(0x0c172e, 2.8);
     scene.add(ambientLight);
 
-    const dirLight1 = new THREE.DirectionalLight(0x00f0ff, 1.8);
-    dirLight1.position.set(40, 60, 40);
-    scene.add(dirLight1);
+    const moonLight = new THREE.DirectionalLight(0x38bdf8, 1.8);
+    moonLight.position.set(60, 120, 60);
+    scene.add(moonLight);
 
-    const dirLight2 = new THREE.DirectionalLight(0xff0077, 1.4);
-    dirLight2.position.set(-40, 50, -30);
-    scene.add(dirLight2);
+    const warmRim = new THREE.DirectionalLight(0xff5500, 1.2);
+    warmRim.position.set(-60, 80, -60);
+    scene.add(warmRim);
 
-    // Dynamic central cyber glow
-    const coreLight = new THREE.PointLight(0x00ffcc, 3, 120, 1.2);
-    coreLight.position.set(0, 25, 0);
-    scene.add(coreLight);
-
-    // --- GROUND GRID (WET CYBERPUNK ASPHALT) ---
-    const groundGeo = new THREE.PlaneGeometry(360, 360, 40, 40);
+    // --- WET CYBER ASPHALT GROUND ---
+    const groundGeo = new THREE.PlaneGeometry(400, 400, 60, 60);
     const groundMat = new THREE.MeshStandardMaterial({
       color: 0x050914,
-      roughness: 0.25,
-      metalness: 0.9,
-      wireframe: false
+      roughness: 0.22,
+      metalness: 0.92
     });
     const ground = new THREE.Mesh(groundGeo, groundMat);
     ground.rotation.x = -Math.PI / 2;
-    ground.position.y = 0;
     scene.add(ground);
 
-    // Glowing Neon Ground Grid Lines
-    const gridHelper = new THREE.GridHelper(360, 72, 0x00ffcc, 0x0d2149);
-    gridHelper.position.y = 0.05;
-    scene.add(gridHelper);
+    // Glowing Road Grid & Crossings
+    const roadGrid = new THREE.GridHelper(400, 80, 0x00ffcc, 0x0a1a38);
+    roadGrid.position.y = 0.04;
+    scene.add(roadGrid);
 
-    // Radial cyber circles on ground
-    for (let r of [18, 38, 65, 95]) {
-      const ringGeo = new THREE.RingGeometry(r - 0.2, r + 0.2, 64);
-      const ringMat = new THREE.MeshBasicMaterial({
-        color: r === 38 ? 0xff0055 : 0x00e5ff,
-        side: THREE.DoubleSide,
-        transparent: true,
-        opacity: 0.45
-      });
-      const ringMesh = new THREE.Mesh(ringGeo, ringMat);
-      ringMesh.rotation.x = -Math.PI / 2;
-      ringMesh.position.y = 0.08;
-      scene.add(ringMesh);
+    // Concentric cyber plaza rings
+    for (let r of [22, 50, 85, 125]) {
+      const ring = new THREE.Mesh(
+        new THREE.RingGeometry(r - 0.25, r + 0.25, 64),
+        new THREE.MeshBasicMaterial({
+          color: r === 50 ? 0xff0055 : 0x00ffcc,
+          side: THREE.DoubleSide,
+          transparent: true,
+          opacity: 0.4
+        })
+      );
+      ring.rotation.x = -Math.PI / 2;
+      ring.position.y = 0.06;
+      scene.add(ring);
     }
 
-    // --- PROCEDURAL CYBERPUNK SKYSCRAPERS ---
-    const buildingMaterials = [
-      new THREE.MeshStandardMaterial({ color: 0x070c18, roughness: 0.3, metalness: 0.8 }),
-      new THREE.MeshStandardMaterial({ color: 0x091024, roughness: 0.2, metalness: 0.85 }),
-      new THREE.MeshStandardMaterial({ color: 0x050811, roughness: 0.4, metalness: 0.75 })
-    ];
+    // --- CHARACTER & INTRO PERCH (REFERENCE 2) ---
+    const character = createCyberCharacter();
+    scene.add(character);
+    stateRef.current.character = character;
 
-    const neonWindowColors = [0x00f0ff, 0xff0077, 0x8b5cf6, 0x38bdf8, 0x10b981];
+    const perch = createArcadePerch();
+    perch.position.set(0, 0, 16);
+    scene.add(perch);
+    stateRef.current.arcadePerch = perch;
 
-    // Helper to generate dynamic billboard texture
-    function createBillboardTexture(title, subtitle, accentColor) {
+    // Initial character sits on perch during intro
+    character.position.set(0, 2.3, 16);
+    if (character.userData.anim?.setSitting) {
+      character.userData.anim.setSitting(true);
+    }
+
+    // --- BUILD 7 DISTINCT ARCHITECTURAL LANDMARKS ---
+    const landmarksMap = {};
+
+    function createMarqueeTexture(title, sub, colorHex) {
       const canvas = document.createElement('canvas');
       canvas.width = 512;
-      canvas.height = 256;
+      canvas.height = 160;
       const ctx = canvas.getContext('2d');
-
-      ctx.fillStyle = '#050914';
-      ctx.fillRect(0, 0, 512, 256);
-
-      // Cyber border
-      ctx.strokeStyle = accentColor;
-      ctx.lineWidth = 8;
-      ctx.strokeRect(8, 8, 496, 240);
-
-      // Corner tech cuts
-      ctx.fillStyle = accentColor;
-      ctx.fillRect(8, 8, 28, 8);
-      ctx.fillRect(8, 8, 8, 28);
-      ctx.fillRect(476, 224, 28, 8);
-      ctx.fillRect(496, 204, 8, 28);
-
-      // Title
-      ctx.font = 'bold 44px sans-serif';
+      ctx.fillStyle = '#030814';
+      ctx.fillRect(0, 0, 512, 160);
+      ctx.strokeStyle = colorHex;
+      ctx.lineWidth = 6;
+      ctx.strokeRect(6, 6, 500, 148);
       ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 38px monospace';
       ctx.textAlign = 'center';
-      ctx.fillText(title, 256, 115);
+      ctx.fillText(title, 256, 75);
+      ctx.font = '600 20px monospace';
+      ctx.fillStyle = colorHex;
+      ctx.fillText(sub, 256, 120);
 
-      // Subtitle
-      ctx.font = '600 22px monospace';
-      ctx.fillStyle = accentColor;
-      ctx.fillText(subtitle, 256, 165);
-
-      const texture = new THREE.CanvasTexture(canvas);
-      texture.needsUpdate = true;
-      return texture;
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.needsUpdate = true;
+      return tex;
     }
 
-    // Add Skyscraper Cluster
-    const buildingBoxes = [];
-    const occupiedLocations = [];
+    LANDMARKS.forEach((land) => {
+      const group = new THREE.Group();
+      group.position.copy(land.pos);
+      scene.add(group);
 
-    function isOccupied(x, z, r = 10) {
-      return occupiedLocations.some(loc => {
-        const dx = loc.x - x;
-        const dz = loc.z - z;
-        return Math.sqrt(dx * dx + dz * dz) < r;
-      });
-    }
+      let coreMesh = null;
+      let haloRings = [];
 
-    // Reserved district positions so skyscrapers don't overlap landmarks
-    const reservedZones = [
-      { x: -28, z: 6, r: 16 },   // Identity
-      { x: 28, z: 6, r: 16 },    // Projects
-      { x: -32, z: -36, r: 16 }, // Tech Lab
-      { x: 32, z: -36, r: 16 },  // Experience
-      { x: 0, z: -58, r: 18 },   // Vault
-      { x: -14, z: 28, r: 14 },  // Archive
-      { x: 16, z: 28, r: 14 },   // Terminal
-      { x: 0, z: 0, r: 18 }      // Central Plaza
-    ];
-    reservedZones.forEach(z => occupiedLocations.push(z));
+      // 1. EDUCATION: University Spire with crystalline wings
+      if (land.id === 'education') {
+        const spire = new THREE.Mesh(
+          new THREE.ConeGeometry(4.5, 42, 6),
+          new THREE.MeshStandardMaterial({
+            color: 0x071e3d,
+            emissive: land.color,
+            emissiveIntensity: 0.35,
+            metalness: 0.8
+          })
+        );
+        spire.position.y = 21;
+        group.add(spire);
+        coreMesh = spire;
 
-    // Generate surrounding skyline buildings
-    for (let i = 0; i < 75; i++) {
-      const angle = (i / 75) * Math.PI * 2 + (Math.random() * 0.15);
-      const dist = 32 + Math.random() * 85;
+        // Wing monoliths
+        for (let sign of [-1, 1]) {
+          const wing = new THREE.Mesh(
+            new THREE.BoxGeometry(2.5, 26, 4.5),
+            new THREE.MeshStandardMaterial({ color: 0x061426, metalness: 0.8 })
+          );
+          wing.position.set(sign * 7.5, 13, 0);
+          group.add(wing);
+        }
+
+        // Revolving rings
+        const ring = new THREE.Mesh(
+          new THREE.TorusGeometry(8, 0.15, 16, 48),
+          new THREE.MeshBasicMaterial({ color: land.color })
+        );
+        ring.position.y = 26;
+        ring.rotation.x = Math.PI / 3;
+        group.add(ring);
+        haloRings.push(ring);
+      }
+
+      // 2. PROJECTS: Giant Technology Research Facility with dual arches & bridge
+      else if (land.id === 'projects') {
+        const pillar1 = new THREE.Mesh(
+          new THREE.BoxGeometry(5, 46, 5),
+          new THREE.MeshStandardMaterial({ color: 0x081c24, emissive: land.color, emissiveIntensity: 0.3 })
+        );
+        pillar1.position.set(-7, 23, 0);
+        group.add(pillar1);
+
+        const pillar2 = new THREE.Mesh(
+          new THREE.BoxGeometry(5, 46, 5),
+          new THREE.MeshStandardMaterial({ color: 0x081c24, emissive: land.color, emissiveIntensity: 0.3 })
+        );
+        pillar2.position.set(7, 23, 0);
+        group.add(pillar2);
+
+        const bridge = new THREE.Mesh(
+          new THREE.BoxGeometry(20, 4, 6),
+          new THREE.MeshStandardMaterial({ color: 0x0b2533, metalness: 0.85 })
+        );
+        bridge.position.set(0, 38, 0);
+        group.add(bridge);
+        coreMesh = bridge;
+
+        // Pulsing floating energy core in the center
+        const core = new THREE.Mesh(
+          new THREE.IcosahedronGeometry(3.5, 1),
+          new THREE.MeshBasicMaterial({ color: 0x00ffcc, wireframe: true })
+        );
+        core.position.set(0, 24, 0);
+        group.add(core);
+        haloRings.push(core);
+      }
+
+      // 3. TECH LAB: Glowing Laboratory with floating polyhedrons
+      else if (land.id === 'lab') {
+        const base = new THREE.Mesh(
+          new THREE.CylinderGeometry(7, 9, 14, 6),
+          new THREE.MeshStandardMaterial({ color: 0x120822, metalness: 0.85 })
+        );
+        base.position.y = 7;
+        group.add(base);
+
+        const crystal = new THREE.Mesh(
+          new THREE.OctahedronGeometry(5.2),
+          new THREE.MeshStandardMaterial({
+            color: 0xa855f7,
+            emissive: land.color,
+            emissiveIntensity: 0.5,
+            wireframe: true
+          })
+        );
+        crystal.position.y = 23;
+        group.add(crystal);
+        coreMesh = crystal;
+        haloRings.push(crystal);
+      }
+
+      // 4. EXPERIENCE: Corporate Skyscraper with stepped sky-terraces
+      else if (land.id === 'experience') {
+        const tower = new THREE.Mesh(
+          new THREE.BoxGeometry(9, 48, 9),
+          new THREE.MeshStandardMaterial({
+            color: 0x051a24,
+            emissive: land.color,
+            emissiveIntensity: 0.25,
+            metalness: 0.85
+          })
+        );
+        tower.position.y = 24;
+        group.add(tower);
+        coreMesh = tower;
+
+        for (let i = 0; i < 3; i++) {
+          const terrace = new THREE.Mesh(
+            new THREE.BoxGeometry(11 - i * 1.5, 1.5, 11 - i * 1.5),
+            new THREE.MeshBasicMaterial({ color: land.color })
+          );
+          terrace.position.y = 16 + i * 12;
+          group.add(terrace);
+        }
+      }
+
+      // 5. ACHIEVEMENTS: Vault & Trophy Dome
+      else if (land.id === 'vault') {
+        const dome = new THREE.Mesh(
+          new THREE.SphereGeometry(8, 16, 12, 0, Math.PI * 2, 0, Math.PI / 2),
+          new THREE.MeshStandardMaterial({
+            color: 0x241804,
+            emissive: land.color,
+            emissiveIntensity: 0.35,
+            wireframe: true
+          })
+        );
+        group.add(dome);
+
+        const trophy = new THREE.Mesh(
+          new THREE.DodecahedronGeometry(3.5),
+          new THREE.MeshBasicMaterial({ color: 0xf59e0b })
+        );
+        trophy.position.y = 12;
+        group.add(trophy);
+        coreMesh = trophy;
+        haloRings.push(trophy);
+      }
+
+      // 6. CERTIFICATIONS: Holographic Cylinder Databank
+      else if (land.id === 'certifications') {
+        const cyl = new THREE.Mesh(
+          new THREE.CylinderGeometry(5, 5, 34, 16),
+          new THREE.MeshStandardMaterial({
+            color: 0x041822,
+            emissive: land.color,
+            emissiveIntensity: 0.3,
+            metalness: 0.85
+          })
+        );
+        cyl.position.y = 17;
+        group.add(cyl);
+        coreMesh = cyl;
+
+        for (let k = 0; k < 3; k++) {
+          const r = new THREE.Mesh(
+            new THREE.TorusGeometry(6.5, 0.15, 12, 32),
+            new THREE.MeshBasicMaterial({ color: land.color })
+          );
+          r.position.y = 10 + k * 8;
+          r.rotation.x = Math.PI / 2;
+          group.add(r);
+          haloRings.push(r);
+        }
+      }
+
+      // 7. CONTACT: High-Altitude Transmission Spire
+      else if (land.id === 'contact') {
+        const mast = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.6, 2.5, 46, 8),
+          new THREE.MeshStandardMaterial({
+            color: 0x220914,
+            emissive: land.color,
+            emissiveIntensity: 0.4
+          })
+        );
+        mast.position.y = 23;
+        group.add(mast);
+        coreMesh = mast;
+
+        const dish = new THREE.Mesh(
+          new THREE.CylinderGeometry(3.2, 0.4, 0.8, 16),
+          new THREE.MeshBasicMaterial({ color: land.color })
+        );
+        dish.position.y = 38;
+        dish.rotation.x = Math.PI / 4;
+        group.add(dish);
+        haloRings.push(dish);
+      }
+
+      // Marquee Neon Sign
+      const marqueeTex = createMarqueeTexture(land.name, land.title, land.labelColor);
+      const marquee = new THREE.Mesh(
+        new THREE.PlaneGeometry(10, 3.2),
+        new THREE.MeshBasicMaterial({ map: marqueeTex, side: THREE.DoubleSide })
+      );
+      marquee.position.set(0, 18, 6.5);
+      group.add(marquee);
+
+      // Dedicated Beacon Point Light
+      const beaconLight = new THREE.PointLight(land.color, 2, 45, 1.2);
+      beaconLight.position.set(0, 14, 0);
+      group.add(beaconLight);
+
+      landmarksMap[land.id] = {
+        group,
+        coreMesh,
+        haloRings,
+        beaconLight,
+        data: land
+      };
+    });
+
+    stateRef.current.landmarksMap = landmarksMap;
+
+    // --- PROCEDURAL SURROUNDING SKYSCRAPERS (DENSE HIGH-TECH METROPOLIS) ---
+    const buildingMat = new THREE.MeshStandardMaterial({
+      color: 0x060c18,
+      roughness: 0.35,
+      metalness: 0.85
+    });
+
+    for (let b = 0; b < 65; b++) {
+      const angle = (b / 65) * Math.PI * 2 + Math.random() * 0.1;
+      const dist = 38 + Math.random() * 95;
       const x = Math.cos(angle) * dist;
       const z = Math.sin(angle) * dist;
 
-      if (isOccupied(x, z, 7)) continue;
-      occupiedLocations.push({ x, z, r: 7 });
+      // Don't overlap landmark plazas
+      const overlapsLandmark = LANDMARKS.some((l) => l.pos.distanceTo(new THREE.Vector3(x, 0, z)) < 18);
+      if (overlapsLandmark) continue;
 
-      const width = 6 + Math.random() * 7;
-      const depth = 6 + Math.random() * 7;
-      const height = 18 + Math.random() * 55;
+      const w = 7 + Math.random() * 8;
+      const d = 7 + Math.random() * 8;
+      const h = 20 + Math.random() * 60;
 
-      const geo = new THREE.BoxGeometry(width, height, depth);
-      const mat = buildingMaterials[Math.floor(Math.random() * buildingMaterials.length)];
-      const mesh = new THREE.Mesh(geo, mat);
-      mesh.position.set(x, height / 2, z);
-      scene.add(mesh);
-      buildingBoxes.push(mesh);
+      const box = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), buildingMat);
+      box.position.set(x, h / 2, z);
+      scene.add(box);
 
-      // Glowing edge highlight wireframe on top
-      const wireGeo = new THREE.EdgesGeometry(geo);
-      const wireColor = neonWindowColors[Math.floor(Math.random() * neonWindowColors.length)];
-      const wireMat = new THREE.LineBasicMaterial({
-        color: wireColor,
-        transparent: true,
-        opacity: Math.random() * 0.4 + 0.25
-      });
-      const wire = new THREE.LineSegments(wireGeo, wireMat);
-      wire.position.copy(mesh.position);
-      scene.add(wire);
-
-      // Random window panels / holographic strips
-      if (Math.random() > 0.45 && height > 30) {
-        const stripHeight = height * 0.6;
-        const stripGeo = new THREE.PlaneGeometry(width * 0.8, stripHeight);
-        const stripMat = new THREE.MeshBasicMaterial({
-          color: wireColor,
+      // Glowing edge line
+      const edges = new THREE.EdgesGeometry(box.geometry);
+      const line = new THREE.LineSegments(
+        edges,
+        new THREE.LineBasicMaterial({
+          color: b % 3 === 0 ? 0x00ffcc : b % 3 === 1 ? 0x38bdf8 : 0xa855f7,
           transparent: true,
-          opacity: 0.35,
-          side: THREE.DoubleSide
-        });
-        const strip = new THREE.Mesh(stripGeo, stripMat);
-        strip.position.set(x, height / 2, z + depth / 2 + 0.05);
-        scene.add(strip);
-      }
-    }
-
-    // --- DISTRICT INTERACTIVE LANDMARKS ---
-    const interactiveObjects = [];
-
-    function registerInteractive(mesh, districtId, label, sub) {
-      mesh.userData = { districtId, label, sub };
-      interactiveObjects.push(mesh);
-      scene.add(mesh);
-    }
-
-    // 1. DIGITAL IDENTITY TOWER (Cyan spire + orbital holographic rings)
-    const idGroup = new THREE.Group();
-    idGroup.position.set(-28, 0, 6);
-    const idTowerGeo = new THREE.CylinderGeometry(2.5, 4.5, 36, 8);
-    const idTowerMat = new THREE.MeshStandardMaterial({
-      color: 0x071b26,
-      emissive: 0x00f0ff,
-      emissiveIntensity: 0.2,
-      roughness: 0.2,
-      metalness: 0.9
-    });
-    const idTower = new THREE.Mesh(idTowerGeo, idTowerMat);
-    idTower.position.y = 18;
-    idGroup.add(idTower);
-
-    // Glowing orbital rings
-    const ring1 = new THREE.Mesh(
-      new THREE.TorusGeometry(5.5, 0.15, 16, 64),
-      new THREE.MeshBasicMaterial({ color: 0x00ffcc })
-    );
-    ring1.rotation.x = Math.PI / 3;
-    ring1.position.y = 26;
-    idGroup.add(ring1);
-
-    const ring2 = new THREE.Mesh(
-      new THREE.TorusGeometry(7.0, 0.12, 16, 64),
-      new THREE.MeshBasicMaterial({ color: 0x38bdf8 })
-    );
-    ring2.rotation.x = -Math.PI / 4;
-    ring2.position.y = 22;
-    idGroup.add(ring2);
-
-    // Billboard sign
-    const idTex = createBillboardTexture('FATHIMA.OS', 'IDENTITY TERMINAL', '#00ffcc');
-    const idSign = new THREE.Mesh(
-      new THREE.PlaneGeometry(8, 4),
-      new THREE.MeshBasicMaterial({ map: idTex, side: THREE.DoubleSide })
-    );
-    idSign.position.set(0, 32, 0);
-    idGroup.add(idSign);
-
-    registerInteractive(idGroup, 'identity', 'DIGITAL IDENTITY', 'Explore Fathima\'s Bio & Strengths');
-    stateRef.current.animatedObjects.push({
-      update: (time) => {
-        ring1.rotation.z = time * 0.8;
-        ring2.rotation.y = time * -0.6;
-        idSign.rotation.y = Math.sin(time * 0.5) * 0.2;
-      }
-    });
-
-    // 2. PROJECT DISTRICT (Dual megatower portal with connecting skybridge)
-    const projGroup = new THREE.Group();
-    projGroup.position.set(28, 0, 6);
-
-    const archPillar1 = new THREE.Mesh(
-      new THREE.BoxGeometry(4, 38, 4),
-      new THREE.MeshStandardMaterial({ color: 0x0a1024, emissive: 0x3b82f6, emissiveIntensity: 0.3 })
-    );
-    archPillar1.position.set(-5, 19, 0);
-    projGroup.add(archPillar1);
-
-    const archPillar2 = new THREE.Mesh(
-      new THREE.BoxGeometry(4, 38, 4),
-      new THREE.MeshStandardMaterial({ color: 0x0a1024, emissive: 0x8b5cf6, emissiveIntensity: 0.3 })
-    );
-    archPillar2.position.set(5, 19, 0);
-    projGroup.add(archPillar2);
-
-    const bridge = new THREE.Mesh(
-      new THREE.BoxGeometry(14, 3, 5),
-      new THREE.MeshStandardMaterial({ color: 0x111c38, roughness: 0.2 })
-    );
-    bridge.position.set(0, 32, 0);
-    projGroup.add(bridge);
-
-    const projTex = createBillboardTexture('AGRIQUEUE', 'PROJECT DISTRICT', '#38bdf8');
-    const projSign = new THREE.Mesh(
-      new THREE.PlaneGeometry(10, 5),
-      new THREE.MeshBasicMaterial({ map: projTex, side: THREE.DoubleSide })
-    );
-    projSign.position.set(0, 24, 0);
-    projGroup.add(projSign);
-
-    registerInteractive(projGroup, 'projects', 'PROJECT DISTRICT', 'Launch AgriQueue & I/O Simulations');
-
-    // 3. TECH LAB SPHERE (Levitating 3D polyhedral core)
-    const labGroup = new THREE.Group();
-    labGroup.position.set(-32, 0, -36);
-
-    const labBase = new THREE.Mesh(
-      new THREE.CylinderGeometry(5, 7, 12, 6),
-      new THREE.MeshStandardMaterial({ color: 0x091424, roughness: 0.3 })
-    );
-    labBase.position.y = 6;
-    labGroup.add(labBase);
-
-    const labCore = new THREE.Mesh(
-      new THREE.IcosahedronGeometry(4.2, 0),
-      new THREE.MeshStandardMaterial({
-        color: 0x8b5cf6,
-        emissive: 0x6366f1,
-        emissiveIntensity: 0.6,
-        wireframe: true
-      })
-    );
-    labCore.position.y = 20;
-    labGroup.add(labCore);
-
-    const innerSphere = new THREE.Mesh(
-      new THREE.SphereGeometry(2.5, 16, 16),
-      new THREE.MeshBasicMaterial({ color: 0x00ffcc })
-    );
-    innerSphere.position.y = 20;
-    labGroup.add(innerSphere);
-
-    const labTex = createBillboardTexture('TECH LAB', 'SKILL MATRIX // CORE', '#a855f7');
-    const labSign = new THREE.Mesh(
-      new THREE.PlaneGeometry(8, 4),
-      new THREE.MeshBasicMaterial({ map: labTex, side: THREE.DoubleSide })
-    );
-    labSign.position.set(0, 28, 0);
-    labGroup.add(labSign);
-
-    registerInteractive(labGroup, 'lab', 'TECH LAB', 'Inspect Holographic Skill Matrix');
-    stateRef.current.animatedObjects.push({
-      update: (time) => {
-        labCore.rotation.x = time * 0.4;
-        labCore.rotation.y = time * 0.6;
-        labCore.position.y = 20 + Math.sin(time * 2) * 0.8;
-        innerSphere.position.y = 20 + Math.sin(time * 2) * 0.8;
-      }
-    });
-
-    // 4. EXPERIENCE TOWER (Ascending helix cyber spire)
-    const expGroup = new THREE.Group();
-    expGroup.position.set(32, 0, -36);
-
-    const expSpire = new THREE.Mesh(
-      new THREE.ConeGeometry(4, 46, 6),
-      new THREE.MeshStandardMaterial({
-        color: 0x0d1f36,
-        emissive: 0x00f0ff,
-        emissiveIntensity: 0.3,
-        roughness: 0.2
-      })
-    );
-    expSpire.position.y = 23;
-    expGroup.add(expSpire);
-
-    // Helical rings around spire
-    const expRings = [];
-    for (let k = 0; k < 5; k++) {
-      const eRing = new THREE.Mesh(
-        new THREE.TorusGeometry(3.6 - k * 0.5, 0.15, 12, 32),
-        new THREE.MeshBasicMaterial({ color: 0x00ffcc })
+          opacity: 0.35
+        })
       );
-      eRing.position.y = 12 + k * 6;
-      eRing.rotation.x = Math.PI / 2;
-      expGroup.add(eRing);
-      expRings.push(eRing);
+      line.position.copy(box.position);
+      scene.add(line);
     }
 
-    const expTex = createBillboardTexture('EXPERIENCE', 'JHF & GENZEE INTERNSHIPS', '#00ffcc');
-    const expSign = new THREE.Mesh(
-      new THREE.PlaneGeometry(9, 4.5),
-      new THREE.MeshBasicMaterial({ map: expTex, side: THREE.DoubleSide })
-    );
-    expSign.position.set(0, 36, 0);
-    expGroup.add(expSign);
+    // --- FLYING TRAFFIC ALONG AIR HIGHWAYS ---
+    const flyingTraffic = [];
+    for (let f = 0; f < 24; f++) {
+      const isRed = f % 2 === 0;
+      const car = new THREE.Mesh(
+        new THREE.BoxGeometry(1.0, 0.4, 3.0),
+        new THREE.MeshBasicMaterial({ color: isRed ? 0xff0055 : 0x00ffcc })
+      );
+      const radius = 45 + (f % 5) * 16;
+      const altitude = 18 + (f % 6) * 6;
+      const speed = (0.2 + (f % 3) * 0.1) * (f % 2 === 0 ? 1 : -1);
+      car.userData = { radius, altitude, speed, angle: Math.random() * Math.PI * 2 };
+      scene.add(car);
+      flyingTraffic.push(car);
+    }
+    stateRef.current.flyingTraffic = flyingTraffic;
 
-    registerInteractive(expGroup, 'experience', 'EXPERIENCE TOWER', 'Explore Career Timeline & Internships');
-    stateRef.current.animatedObjects.push({
-      update: (time) => {
-        expRings.forEach((r, idx) => {
-          r.rotation.z = time * (0.5 + idx * 0.2);
-        });
-      }
-    });
-
-    // 5. ACHIEVEMENT VAULT (Golden/Amber geodesic dome)
-    const vaultGroup = new THREE.Group();
-    vaultGroup.position.set(0, 0, -58);
-
-    const domeGeo = new THREE.SphereGeometry(7, 16, 12, 0, Math.PI * 2, 0, Math.PI / 2);
-    const domeMat = new THREE.MeshStandardMaterial({
-      color: 0x241804,
-      emissive: 0xf59e0b,
-      emissiveIntensity: 0.35,
-      roughness: 0.3,
-      wireframe: true
-    });
-    const dome = new THREE.Mesh(domeGeo, domeMat);
-    dome.position.y = 0;
-    vaultGroup.add(dome);
-
-    const trophyCore = new THREE.Mesh(
-      new THREE.OctahedronGeometry(2.8),
-      new THREE.MeshBasicMaterial({ color: 0xf59e0b })
-    );
-    trophyCore.position.y = 10;
-    vaultGroup.add(trophyCore);
-
-    const vaultTex = createBillboardTexture('ACHIEVEMENTS', 'SIH 2026 3RD PRIZE // BADGES', '#f59e0b');
-    const vaultSign = new THREE.Mesh(
-      new THREE.PlaneGeometry(10, 5),
-      new THREE.MeshBasicMaterial({ map: vaultTex, side: THREE.DoubleSide })
-    );
-    vaultSign.position.set(0, 20, 0);
-    vaultGroup.add(vaultSign);
-
-    registerInteractive(vaultGroup, 'vault', 'ACHIEVEMENT VAULT', 'Unlock Trophies & Certifications');
-    stateRef.current.animatedObjects.push({
-      update: (time) => {
-        trophyCore.rotation.y = time * 1.2;
-        trophyCore.rotation.x = Math.sin(time) * 0.3;
-        trophyCore.position.y = 10 + Math.sin(time * 3) * 0.5;
-      }
-    });
-
-    // 6. EDUCATION ARCHIVE (Emerald/Cyan crystalline monolith)
-    const archGroup = new THREE.Group();
-    archGroup.position.set(-14, 0, 28);
-
-    const archMonolith = new THREE.Mesh(
-      new THREE.BoxGeometry(5, 26, 4),
-      new THREE.MeshStandardMaterial({
-        color: 0x052e16,
-        emissive: 0x10b981,
-        emissiveIntensity: 0.3,
-        roughness: 0.2
+    // --- CYBER RAIN & FLOATING MOTES ---
+    const moteCount = 600;
+    const moteGeo = new THREE.BufferGeometry();
+    const motePos = new Float32Array(moteCount * 3);
+    for (let m = 0; m < moteCount * 3; m += 3) {
+      motePos[m] = (Math.random() - 0.5) * 240;
+      motePos[m + 1] = Math.random() * 80;
+      motePos[m + 2] = (Math.random() - 0.5) * 240;
+    }
+    moteGeo.setAttribute('position', new THREE.BufferAttribute(motePos, 3));
+    const motes = new THREE.Points(
+      moteGeo,
+      new THREE.PointsMaterial({
+        color: 0x00ffcc,
+        size: 0.75,
+        transparent: true,
+        opacity: 0.6,
+        blending: THREE.AdditiveBlending
       })
     );
-    archMonolith.position.y = 13;
-    archGroup.add(archMonolith);
+    scene.add(motes);
 
-    const archTex = createBillboardTexture('EDUCATION', 'B.TECH CSE (KTU) // 7.41 CGPA', '#10b981');
-    const archSign = new THREE.Mesh(
-      new THREE.PlaneGeometry(7.5, 3.8),
-      new THREE.MeshBasicMaterial({ map: archTex, side: THREE.DoubleSide })
-    );
-    archSign.position.set(0, 24, 0);
-    archGroup.add(archSign);
+    // --- KEYBOARD & MOUSE TRAVEL CONTROLLER ---
+    const handleKeyDown = (e) => {
+      const key = e.key.toLowerCase();
+      if (key === 'w' || key === 'arrowup') stateRef.current.keys.w = true;
+      if (key === 's' || key === 'arrowdown') stateRef.current.keys.s = true;
+      if (key === 'a' || key === 'arrowleft') stateRef.current.keys.a = true;
+      if (key === 'd' || key === 'arrowright') stateRef.current.keys.d = true;
+      if (e.shiftKey) stateRef.current.keys.shift = true;
 
-    registerInteractive(archGroup, 'archive', 'EDUCATION ARCHIVE', 'Inspect Academic Milestones');
-
-    // 7. COMMUNICATION TERMINAL (Antenna transmission mast with pulse beam)
-    const termGroup = new THREE.Group();
-    termGroup.position.set(16, 0, 28);
-
-    const mastGeo = new THREE.CylinderGeometry(0.5, 2, 32, 8);
-    const mastMat = new THREE.MeshStandardMaterial({
-      color: 0x221319,
-      emissive: 0xf43f5e,
-      emissiveIntensity: 0.4
-    });
-    const mast = new THREE.Mesh(mastGeo, mastMat);
-    mast.position.y = 16;
-    termGroup.add(mast);
-
-    const dish = new THREE.Mesh(
-      new THREE.CylinderGeometry(2.5, 0.4, 0.8, 16),
-      new THREE.MeshBasicMaterial({ color: 0xff0055 })
-    );
-    dish.position.y = 30;
-    dish.rotation.x = Math.PI / 4;
-    termGroup.add(dish);
-
-    const termTex = createBillboardTexture('TERMINAL', 'LET\'S BUILD SOMETHING', '#f43f5e');
-    const termSign = new THREE.Mesh(
-      new THREE.PlaneGeometry(8, 4),
-      new THREE.MeshBasicMaterial({ map: termTex, side: THREE.DoubleSide })
-    );
-    termSign.position.set(0, 22, 0);
-    termGroup.add(termSign);
-
-    registerInteractive(termGroup, 'terminal', 'COMMUNICATION TERMINAL', 'Transmit Message or Connect');
-    stateRef.current.animatedObjects.push({
-      update: (time) => {
-        dish.rotation.y = time * 0.9;
+      // Press 'E' to enter nearby building
+      if (key === 'e' && stateRef.current.nearbyBuildingId) {
+        soundManager.playClick();
+        onSelectDistrict(stateRef.current.nearbyBuildingId);
       }
-    });
+    };
 
-    stateRef.current.interactiveObjects = interactiveObjects;
-
-    // --- CYBER RAIN & FLOATING PARTICLES ---
-    const particleCount = 750;
-    const particleGeo = new THREE.BufferGeometry();
-    const particlePositions = new Float32Array(particleCount * 3);
-    const particleSpeeds = new Float32Array(particleCount);
-
-    for (let p = 0; p < particleCount; p++) {
-      particlePositions[p * 3] = (Math.random() - 0.5) * 220;
-      particlePositions[p * 3 + 1] = Math.random() * 80;
-      particlePositions[p * 3 + 2] = (Math.random() - 0.5) * 220;
-      particleSpeeds[p] = 0.1 + Math.random() * 0.3;
-    }
-    particleGeo.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
-
-    const particleMat = new THREE.PointsMaterial({
-      color: 0x00f0ff,
-      size: 0.85,
-      transparent: true,
-      opacity: 0.65,
-      blending: THREE.AdditiveBlending
-    });
-    const particleSystem = new THREE.Points(particleGeo, particleMat);
-    scene.add(particleSystem);
-
-    // --- AERIAL TRAFFIC (FLYING VEHICLE LIGHT TRAILS) ---
-    const trafficCount = 28;
-    const trafficCars = [];
-
-    for (let t = 0; t < trafficCount; t++) {
-      const isRed = t % 2 === 0;
-      const carGeo = new THREE.BoxGeometry(0.8, 0.3, 2.5);
-      const carMat = new THREE.MeshBasicMaterial({
-        color: isRed ? 0xff1e56 : 0x00ffff
-      });
-      const car = new THREE.Mesh(carGeo, carMat);
-
-      const laneRadius = 35 + (t % 5) * 12;
-      const altitude = 14 + (t % 6) * 5;
-      const speed = (0.2 + (t % 3) * 0.15) * (t % 2 === 0 ? 1 : -1);
-      const startAngle = Math.random() * Math.PI * 2;
-
-      car.userData = { laneRadius, altitude, speed, angle: startAngle };
-      scene.add(car);
-      trafficCars.push(car);
-    }
-
-    // --- MOUSE & RAYCASTER INTERACTION ---
-    const raycaster = new THREE.Raycaster();
-
-    const handlePointerMove = (e) => {
-      const rect = container.getBoundingClientRect();
-      const x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-      const y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-
-      stateRef.current.mouse.set(x, y);
-      stateRef.current.targetMouseParallax.set(x * 6, y * 3);
-
-      if (stateRef.current.isDragging) {
-        const dx = e.clientX - stateRef.current.dragStart.x;
-        const dy = e.clientY - stateRef.current.dragStart.y;
-        stateRef.current.orbitOffset.x += dx * 0.005;
-        stateRef.current.orbitOffset.y = Math.max(
-          -0.6,
-          Math.min(0.6, stateRef.current.orbitOffset.y + dy * 0.003)
-        );
-        stateRef.current.dragStart = { x: e.clientX, y: e.clientY };
-      }
+    const handleKeyUp = (e) => {
+      const key = e.key.toLowerCase();
+      if (key === 'w' || key === 'arrowup') stateRef.current.keys.w = false;
+      if (key === 's' || key === 'arrowdown') stateRef.current.keys.s = false;
+      if (key === 'a' || key === 'arrowleft') stateRef.current.keys.a = false;
+      if (key === 'd' || key === 'arrowright') stateRef.current.keys.d = false;
+      if (!e.shiftKey) stateRef.current.keys.shift = false;
     };
 
     const handlePointerDown = (e) => {
@@ -617,106 +557,172 @@ export default function City3D({ activeDistrict, onSelectDistrict, reducedMotion
       stateRef.current.dragStart = { x: e.clientX, y: e.clientY };
     };
 
+    const handlePointerMove = (e) => {
+      if (stateRef.current.isDragging) {
+        const dx = e.clientX - stateRef.current.dragStart.x;
+        const dy = e.clientY - stateRef.current.dragStart.y;
+        stateRef.current.player.yaw -= dx * 0.004;
+        stateRef.current.player.pitch = Math.max(
+          -0.6,
+          Math.min(0.6, stateRef.current.player.pitch - dy * 0.003)
+        );
+        stateRef.current.dragStart = { x: e.clientX, y: e.clientY };
+      }
+    };
+
     const handlePointerUp = () => {
       stateRef.current.isDragging = false;
     };
 
-    const handleClick = (e) => {
-      const rect = container.getBoundingClientRect();
-      const mouse = new THREE.Vector2(
-        ((e.clientX - rect.left) / rect.width) * 2 - 1,
-        -((e.clientY - rect.top) / rect.height) * 2 + 1
-      );
-      raycaster.setFromCamera(mouse, camera);
-      const intersects = raycaster.intersectObjects(stateRef.current.interactiveObjects, true);
-
-      if (intersects.length > 0) {
-        let obj = intersects[0].object;
-        while (obj && !obj.userData?.districtId && obj.parent) {
-          obj = obj.parent;
-        }
-        if (obj?.userData?.districtId) {
-          soundManager.playClick();
-          onSelectDistrict(obj.userData.districtId);
-        }
-      }
-    };
-
-    window.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
     container.addEventListener('pointerdown', handlePointerDown);
+    window.addEventListener('pointermove', handlePointerMove);
     window.addEventListener('pointerup', handlePointerUp);
-    container.addEventListener('click', handleClick);
 
     // --- ANIMATION LOOP ---
-    let animationFrameId;
+    let frameId;
     let clock = new THREE.Clock();
 
     const animate = () => {
-      animationFrameId = requestAnimationFrame(animate);
+      frameId = requestAnimationFrame(animate);
       const delta = Math.min(clock.getDelta(), 0.1);
       const time = clock.getElapsedTime();
 
-      // Animate landmarks
-      stateRef.current.animatedObjects.forEach(obj => obj.update(time));
+      // Animate halo rings
+      Object.values(stateRef.current.landmarksMap).forEach((item) => {
+        item.haloRings.forEach((r, idx) => {
+          r.rotation.y = time * (0.8 + idx * 0.3);
+          r.rotation.z = Math.sin(time) * 0.2;
+        });
+      });
 
-      // Animate particles (floating cyber motes)
-      const positions = particleGeo.attributes.position.array;
-      for (let p = 0; p < particleCount; p++) {
-        positions[p * 3 + 1] += particleSpeeds[p] * 0.8;
-        if (positions[p * 3 + 1] > 80) {
-          positions[p * 3 + 1] = 0;
-        }
-      }
-      particleGeo.attributes.position.needsUpdate = true;
-
-      // Animate traffic cars
-      trafficCars.forEach(car => {
+      // Animate flying traffic
+      stateRef.current.flyingTraffic.forEach((car) => {
         car.userData.angle += car.userData.speed * delta;
-        const rad = car.userData.laneRadius;
+        const rad = car.userData.radius;
         car.position.x = Math.cos(car.userData.angle) * rad;
         car.position.z = Math.sin(car.userData.angle) * rad;
         car.position.y = car.userData.altitude;
         car.rotation.y = -car.userData.angle + (car.userData.speed > 0 ? 0 : Math.PI);
       });
 
-      // Smooth camera interpolation
-      const lerpSpeed = reducedMotion ? 0.15 : 0.045;
-      stateRef.current.currentPos.lerp(stateRef.current.targetPos, lerpSpeed);
-      stateRef.current.currentTarget.lerp(stateRef.current.targetTarget, lerpSpeed);
-
-      // Smooth mouse parallax
-      stateRef.current.mouseParallax.lerp(stateRef.current.targetMouseParallax, 0.05);
-
-      // Apply camera transform with orbit & subtle parallax
-      camera.position.copy(stateRef.current.currentPos);
-      camera.position.x += stateRef.current.mouseParallax.x * 0.6;
-      camera.position.y += stateRef.current.mouseParallax.y * 0.4;
-
-      if (activeDistrict === 'explore') {
-        camera.position.x += Math.sin(stateRef.current.orbitOffset.x) * 15;
-        camera.position.z += Math.cos(stateRef.current.orbitOffset.x) * 15 - 15;
+      // Animate floating motes
+      const mArray = moteGeo.attributes.position.array;
+      for (let p = 0; p < moteCount; p++) {
+        mArray[p * 3 + 1] += 0.15;
+        if (mArray[p * 3 + 1] > 80) mArray[p * 3 + 1] = 0;
       }
+      moteGeo.attributes.position.needsUpdate = true;
 
-      camera.lookAt(stateRef.current.currentTarget);
+      // ========================================================
+      // INTRO CINEMATIC vs OPEN STREET TRAVEL vs BUILDING INTERIOR
+      // ========================================================
+      if (isIntroPlaying) {
+        // Dramatic establishing camera moving toward city entrance
+        const introProgress = Math.min(time / 6.0, 1.0);
+        camera.position.x = Math.sin(time * 0.2) * 20;
+        camera.position.y = 12 + Math.cos(time * 0.2) * 4;
+        camera.position.z = 32 - introProgress * 6;
+        camera.lookAt(0, 3, 16);
 
-      // Raycasting for hover highlight
-      raycaster.setFromCamera(stateRef.current.mouse, camera);
-      const intersects = raycaster.intersectObjects(stateRef.current.interactiveObjects, true);
-
-      if (intersects.length > 0) {
-        let obj = intersects[0].object;
-        while (obj && !obj.userData?.districtId && obj.parent) {
-          obj = obj.parent;
+        if (character.userData.anim) {
+          character.userData.anim.update(delta, false, 0);
         }
-        if (obj?.userData?.districtId && stateRef.current.hoveredDistrict !== obj.userData.districtId) {
-          stateRef.current.hoveredDistrict = obj.userData.districtId;
-          soundManager.playHover();
-          container.style.cursor = 'crosshair';
+      } else if (activeDistrict !== 'city') {
+        // Inside building: Smooth cinematic camera focus on that building
+        const targetLandmark = LANDMARKS.find((l) => l.id === activeDistrict);
+        if (targetLandmark) {
+          const desiredCamPos = targetLandmark.pos.clone().add(new THREE.Vector3(0, 18, 22));
+          const desiredLookAt = targetLandmark.pos.clone().add(new THREE.Vector3(0, 14, 0));
+          camera.position.lerp(desiredCamPos, 0.04);
+          camera.lookAt(desiredLookAt);
         }
       } else {
-        if (stateRef.current.hoveredDistrict) {
-          stateRef.current.hoveredDistrict = null;
-          container.style.cursor = 'default';
+        // FREE STREET EXPLORATION MODE (WASD + MOUSE)
+        const p = stateRef.current.player;
+        const keys = stateRef.current.keys;
+
+        // Calculate move direction relative to camera yaw
+        const moveDir = new THREE.Vector3();
+        if (keys.w) moveDir.z -= 1;
+        if (keys.s) moveDir.z += 1;
+        if (keys.a) moveDir.x -= 1;
+        if (keys.d) moveDir.x += 1;
+
+        const isMoving = moveDir.lengthSq() > 0;
+        p.isMoving = isMoving;
+
+        if (isMoving) {
+          moveDir.normalize();
+          moveDir.applyAxisAngle(new THREE.Vector3(0, 1, 0), p.yaw);
+
+          const curSpeed = keys.shift ? p.speed * 1.8 : p.speed;
+          p.pos.x += moveDir.x * curSpeed * delta;
+          p.pos.z += moveDir.z * curSpeed * delta;
+
+          // Keep player inside city bounds
+          p.pos.x = Math.max(-120, Math.min(120, p.pos.x));
+          p.pos.z = Math.max(-120, Math.min(120, p.pos.z));
+        }
+
+        // Update player character in third-person view
+        character.position.set(p.pos.x, 0, p.pos.z);
+        character.rotation.y = p.yaw + Math.PI;
+
+        if (character.userData.anim) {
+          character.userData.anim.setSitting(false);
+          character.userData.anim.update(delta, isMoving, keys.shift ? 2 : 1);
+        }
+
+        // Third-person camera trailing player
+        const camDist = 12;
+        const camHeight = 5.5 + Math.sin(p.pitch) * 4;
+        const targetCamX = p.pos.x + Math.sin(p.yaw) * camDist;
+        const targetCamZ = p.pos.z + Math.cos(p.yaw) * camDist;
+
+        camera.position.x = THREE.MathUtils.lerp(camera.position.x, targetCamX, 0.1);
+        camera.position.y = THREE.MathUtils.lerp(camera.position.y, camHeight, 0.1);
+        camera.position.z = THREE.MathUtils.lerp(camera.position.z, targetCamZ, 0.1);
+
+        const lookTarget = new THREE.Vector3(p.pos.x, 2.8, p.pos.z);
+        camera.lookAt(lookTarget);
+
+        // --- PROXIMITY DETECTION TO 7 LANDMARKS ---
+        let closestBuilding = null;
+        let minDistance = 26; // detection radius
+
+        LANDMARKS.forEach((land) => {
+          const dist = p.pos.distanceTo(land.pos);
+          if (dist < minDistance) {
+            closestBuilding = land;
+            minDistance = dist;
+          }
+
+          // Light intensity reacts to proximity
+          const mapItem = stateRef.current.landmarksMap[land.id];
+          if (mapItem?.beaconLight) {
+            const proximityFactor = Math.max(0, 1 - dist / 50);
+            mapItem.beaconLight.intensity = 2.0 + proximityFactor * 4.0;
+          }
+        });
+
+        if (closestBuilding) {
+          if (stateRef.current.nearbyBuildingId !== closestBuilding.id) {
+            stateRef.current.nearbyBuildingId = closestBuilding.id;
+            soundManager.playHover();
+            onNearbyBuilding({
+              id: closestBuilding.id,
+              name: closestBuilding.name,
+              title: closestBuilding.title,
+              dist: Math.round(minDistance)
+            });
+          }
+        } else {
+          if (stateRef.current.nearbyBuildingId !== null) {
+            stateRef.current.nearbyBuildingId = null;
+            onNearbyBuilding(null);
+          }
         }
       }
 
@@ -725,32 +731,29 @@ export default function City3D({ activeDistrict, onSelectDistrict, reducedMotion
 
     animate();
 
-    // Resize Handler
     const handleResize = () => {
       if (!container || !renderer || !camera) return;
-      const width = container.clientWidth;
-      const height = container.clientHeight;
-      camera.aspect = width / height;
+      camera.aspect = container.clientWidth / container.clientHeight;
       camera.updateProjectionMatrix();
-      renderer.setSize(width, height);
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.setSize(container.clientWidth, container.clientHeight);
     };
 
     window.addEventListener('resize', handleResize);
 
     return () => {
-      cancelAnimationFrame(animationFrameId);
-      window.removeEventListener('pointermove', handlePointerMove);
+      cancelAnimationFrame(frameId);
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
       container.removeEventListener('pointerdown', handlePointerDown);
+      window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('pointerup', handlePointerUp);
-      container.removeEventListener('click', handleClick);
       window.removeEventListener('resize', handleResize);
       if (renderer.domElement && container.contains(renderer.domElement)) {
         container.removeChild(renderer.domElement);
       }
       renderer.dispose();
     };
-  }, [reducedMotion, onSelectDistrict, activeDistrict]);
+  }, [reducedMotion, isIntroPlaying, activeDistrict, onNearbyBuilding, onSelectDistrict]);
 
   return (
     <div

@@ -1,152 +1,144 @@
 import React, { useState, useEffect } from 'react';
-import { Terminal, ShieldCheck, ChevronRight, Sparkles, Cpu } from 'lucide-react';
+import { Terminal, ShieldCheck, ChevronRight, Sparkles, Cpu, Play } from 'lucide-react';
 import { soundManager } from '../utils/soundManager';
 
-const BOOT_LOGS = [
-  'INITIALIZING FATHIMA.OS KERNEL v4.1...',
-  'ALLOCATING QUANTUM MEMORY CHANNELS... OK',
-  'LOADING DIGITAL ENVIRONMENT & 3D MESH SHADERS...',
-  'CONNECTING PROJECT DATABASE (AGRIQUEUE / I-O SIM)...',
-  'LOADING EXPERIENCE MATRIX & ACADEMIC REGISTERS...',
-  'LOADING SKILLS & HARDWARE ARCHITECTURE MODULES...',
-  'VERIFYING CRYPTOGRAPHIC HANDSHAKE...',
-  'SYSTEM READY.'
+const BOOT_STAGES = [
+  { time: 0, text: 'INITIALIZING FATHIMA.OS KERNEL 6.2...' },
+  { time: 2, text: 'SYNCHRONIZING DIGITAL METROPOLIS MESH & LIGHTS...' },
+  { time: 4, text: 'DISCOVERING 7 ARCHITECTURAL LANDMARKS...' },
+  { time: 6, text: 'LINKING PROJECT LAB, TECH MATRIX & VAULT...' },
+  { time: 8, text: 'ESTABLISHING CYBER COMPANION TELEMETRY...' },
+  { time: 10, text: 'SYSTEM ONLINE // DIGITAL ENVIRONMENT SYNCHRONIZED.' }
 ];
 
 export default function BootSequence({ onComplete }) {
+  const [phase, setPhase] = useState(0); // 0: boot log, 1: cinematic reveal, 2: enter prompt
   const [logIndex, setLogIndex] = useState(0);
-  const [bootReady, setBootReady] = useState(false);
-  const [isEntering, setIsEntering] = useState(false);
+  const [isWarping, setIsWarping] = useState(false);
 
   useEffect(() => {
     soundManager.playBoot();
-    const interval = setInterval(() => {
+
+    // Stage 1: Terminal Logs (0 - 4s)
+    const logTimer = setInterval(() => {
       setLogIndex((prev) => {
-        if (prev < BOOT_LOGS.length - 1) {
+        if (prev < BOOT_STAGES.length - 1) {
           soundManager.playHover();
           return prev + 1;
         } else {
-          clearInterval(interval);
-          setBootReady(true);
+          clearInterval(logTimer);
+          setPhase(1);
           return prev;
         }
       });
-    }, 280);
+    }, 450);
 
-    return () => clearInterval(interval);
+    return () => clearInterval(logTimer);
   }, []);
 
-  const handleEnter = () => {
+  const handleEnterWorld = () => {
     soundManager.playSuccess();
     soundManager.playWarp();
-    setIsEntering(true);
+    setIsWarping(true);
     setTimeout(() => {
       onComplete();
-    }, 850);
-  };
-
-  const handleSkip = () => {
-    soundManager.playClick();
-    onComplete();
+    }, 900);
   };
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex items-center justify-center bg-[#02040a] text-white transition-opacity duration-700 ${
-        isEntering ? 'opacity-0 scale-105 pointer-events-none' : 'opacity-100'
+      className={`fixed inset-0 z-50 flex items-center justify-center transition-all duration-1000 ${
+        isWarping ? 'opacity-0 scale-110 pointer-events-none' : 'opacity-100'
       }`}
     >
-      {/* Background Cyber Grid */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#071329] via-[#02050c] to-[#010206] opacity-90" />
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#00ffcc08_1px,transparent_1px),linear-gradient(to_bottom,#00ffcc08_1px,transparent_1px)] bg-[size:40px_40px]" />
+      {/* Background Dim Gradient (lets 3D city shine through during cinematic reveal) */}
+      <div
+        className={`absolute inset-0 transition-opacity duration-1000 ${
+          phase === 0
+            ? 'bg-[#020409]'
+            : 'bg-gradient-to-t from-[#020409]/95 via-[#020409]/40 to-transparent'
+        }`}
+      />
 
-      {/* Cyber Scanline effect */}
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.4)_50%)] bg-[length:100%_4px] opacity-35" />
-
-      {/* Skip button in top right */}
+      {/* Bypass / Skip in top corner */}
       <button
-        onClick={handleSkip}
-        className="absolute top-6 right-6 flex items-center gap-2 px-3 py-1.5 rounded text-xs font-mono tracking-widest text-[#00ffcc] border border-[#00ffcc33] hover:border-[#00ffcc] hover:bg-[#00ffcc15] transition-all cursor-pointer z-20"
+        onClick={handleEnterWorld}
+        className="absolute top-6 right-6 z-50 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-mono text-[#00ffcc] border border-[#00ffcc30] hover:bg-[#00ffcc15] transition-all cursor-pointer"
       >
-        <span>BYPASS BOOT</span>
+        <span>BYPASS CINEMATIC</span>
         <ChevronRight className="w-3.5 h-3.5" />
       </button>
 
-      {/* Center Console Container */}
-      <div className="relative z-10 w-full max-w-2xl px-6 py-8 mx-4 border border-[#00ffcc30] bg-[#050b18]/85 backdrop-blur-md rounded-lg shadow-[0_0_50px_rgba(0,255,204,0.15)]">
-        {/* Terminal Header */}
-        <div className="flex items-center justify-between pb-3 mb-6 border-b border-[#00ffcc25]">
-          <div className="flex items-center gap-2.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#ff0055] animate-ping" />
-            <span className="w-2.5 h-2.5 rounded-full bg-[#00ffcc]" />
-            <span className="font-mono text-xs tracking-wider text-[#00ffcc]">
-              SYS.KERNEL // BOOT SEQUENCE 4.1
-            </span>
+      {/* ========================================================
+          PHASE 0: TERMINAL BOOT SEQUENCE (0 - 4s)
+      ======================================================== */}
+      {phase === 0 && (
+        <div className="relative z-10 w-full max-w-xl mx-4 p-6 rounded-xl bg-[#030814]/90 border border-[#00ffcc30] shadow-[0_0_40px_rgba(0,255,204,0.15)] font-mono space-y-3">
+          <div className="flex items-center justify-between pb-3 border-b border-[#00ffcc20] text-xs text-[#00ffcc]">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-[#ff0055] animate-ping" />
+              <span>SYS.KERNEL // BOOT DIAGNOSTICS</span>
+            </div>
+            <span className="text-gray-400">CALICUT // 2026</span>
           </div>
-          <div className="font-mono text-xs text-gray-400">
-            PORT: 8080 // SECURE
-          </div>
-        </div>
 
-        {/* Console Boot Logs */}
-        <div className="mb-8 font-mono text-xs md:text-sm space-y-2 h-44 overflow-hidden text-gray-300">
-          {BOOT_LOGS.slice(0, logIndex + 1).map((log, idx) => (
-            <div
-              key={idx}
-              className={`flex items-center gap-2 transition-all duration-200 ${
-                idx === logIndex ? 'text-[#00ffcc] font-semibold' : 'text-gray-400'
-              }`}
-            >
-              <span className="text-gray-500 font-bold">&gt;</span>
-              <span>{log}</span>
-              {idx === logIndex && !bootReady && (
-                <span className="w-2 h-4 bg-[#00ffcc] inline-block animate-pulse" />
-              )}
-            </div>
-          ))}
-        </div>
-
-        {/* Final System Ready & Hero Title */}
-        {bootReady ? (
-          <div className="pt-4 border-t border-[#00ffcc25] animate-fadeIn text-center space-y-5">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#00ffcc15] border border-[#00ffcc44] text-[#00ffcc] text-xs font-mono">
-              <ShieldCheck className="w-4 h-4" />
-              <span>DIGITAL ENVIRONMENT SYNCHRONIZED</span>
-            </div>
-
-            <div>
-              <h1 className="text-3xl md:text-5xl font-extrabold tracking-wider text-white font-['Orbitron'] uppercase drop-shadow-[0_0_20px_rgba(0,255,204,0.4)]">
-                FATHIMA NAJHA K
-              </h1>
-              <p className="mt-2 text-sm md:text-base font-medium tracking-widest text-[#38bdf8] font-['Rajdhani'] uppercase">
-                COMPUTER SCIENCE ENGINEER <span className="text-[#ff0055] mx-1.5">•</span> CREATIVE DEVELOPER
-              </p>
-              <p className="mt-1 text-xs text-gray-400 font-mono italic">
-                "Exploring technology, one system at a time."
-              </p>
-            </div>
-
-            {/* Glowing Enter Button */}
-            <div className="pt-2">
-              <button
-                onClick={handleEnter}
-                onMouseEnter={() => soundManager.playHover()}
-                className="group relative inline-flex items-center gap-3 px-8 py-3.5 rounded font-['Orbitron'] text-sm font-bold tracking-widest text-[#02040a] bg-gradient-to-r from-[#00ffcc] via-[#38bdf8] to-[#00e5ff] hover:shadow-[0_0_35px_rgba(0,255,204,0.7)] transition-all duration-300 transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer overflow-hidden"
+          <div className="space-y-1.5 text-xs text-gray-300 min-h-[140px]">
+            {BOOT_STAGES.slice(0, logIndex + 1).map((s, idx) => (
+              <div
+                key={idx}
+                className={idx === logIndex ? 'text-[#00ffcc] font-bold' : 'text-gray-400'}
               >
-                <div className="absolute inset-0 bg-white/30 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
-                <Cpu className="w-4 h-4 text-[#02040a]" />
-                <span>ENTER FATHIMA.OS</span>
-                <ChevronRight className="w-4 h-4 text-[#02040a] group-hover:translate-x-1 transition-transform" />
-              </button>
-            </div>
+                &gt; {s.text}
+              </div>
+            ))}
           </div>
-        ) : (
-          <div className="flex items-center justify-between pt-4 border-t border-[#00ffcc20] text-xs font-mono text-gray-500">
-            <span className="animate-pulse">MOUNTING CYBER CITY GEOMETRY...</span>
-            <span>{Math.round(((logIndex + 1) / BOOT_LOGS.length) * 100)}%</span>
+        </div>
+      )}
+
+      {/* ========================================================
+          PHASE 1: CINEMATIC REVEAL & AVATAR PERCH (REFERENCE 2)
+      ======================================================== */}
+      {phase >= 1 && (
+        <div className="relative z-10 max-w-2xl mx-4 text-center space-y-6 animate-fadeIn">
+          {/* System Badge */}
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#00ffcc15] border border-[#00ffcc40] text-xs font-mono text-[#00ffcc]">
+            <span className="w-2 h-2 rounded-full bg-[#00ffcc] animate-pulse" />
+            <span>SYSTEM ONLINE // ENTER THE DIGITAL CITY</span>
           </div>
-        )}
-      </div>
+
+          {/* Title Card */}
+          <div className="space-y-2">
+            <h1 className="text-4xl sm:text-6xl md:text-7xl font-black font-['Orbitron'] text-white tracking-widest drop-shadow-[0_0_35px_rgba(0,255,204,0.5)]">
+              FATHIMA.OS
+            </h1>
+            <p className="text-base sm:text-xl font-bold font-['Rajdhani'] text-[#38bdf8] tracking-widest uppercase">
+              COMPUTER SCIENCE ENGINEER <span className="text-[#ff0055] mx-1">•</span> CREATIVE DEVELOPER
+            </p>
+            <p className="text-xs sm:text-sm font-mono text-gray-400 italic">
+              "The city itself is the portfolio. Travel through the streets and discover my world."
+            </p>
+          </div>
+
+          {/* Primary Call to Action Button */}
+          <div className="pt-2">
+            <button
+              onClick={handleEnterWorld}
+              onMouseEnter={() => soundManager.playHover()}
+              className="group relative inline-flex items-center gap-3 px-8 py-4 rounded-xl font-['Orbitron'] text-sm sm:text-base font-extrabold tracking-widest text-[#020409] bg-gradient-to-r from-[#00ffcc] via-[#38bdf8] to-[#00e5ff] hover:shadow-[0_0_40px_rgba(0,255,204,0.8)] transition-all duration-300 transform hover:-translate-y-1 cursor-pointer overflow-hidden"
+            >
+              <div className="absolute inset-0 bg-white/30 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+              <Play className="w-5 h-5 fill-current text-[#020409]" />
+              <span>EXPLORE MY DIGITAL CITY</span>
+              <ChevronRight className="w-5 h-5 text-[#020409] group-hover:translate-x-1.5 transition-transform" />
+            </button>
+          </div>
+
+          {/* Control instruction hint */}
+          <div className="text-xs font-mono text-gray-400">
+            [WASD / ARROWS] TO MOVE STREETS • [DRAG MOUSE] TO LOOK • [SHIFT] SPRINT
+          </div>
+        </div>
+      )}
     </div>
   );
 }

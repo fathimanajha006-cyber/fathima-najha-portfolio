@@ -401,13 +401,13 @@ export const portfolioData = {
   ],
 
   districts: [
-    { id: "explore", label: "EXPLORE", name: "CITY OVERVIEW", subtitle: "Orbit the 3D Metropolis", icon: "Compass" },
-    { id: "identity", label: "IDENTITY", name: "DIGITAL IDENTITY", subtitle: "Holographic Persona Dossier", icon: "User" },
-    { id: "projects", label: "PROJECTS", name: "PROJECT DISTRICT", subtitle: "Interactive Systems & Sims", icon: "Code2" },
-    { id: "lab", label: "TECH LAB", name: "TECH LAB", subtitle: "Holographic Skill Matrix", icon: "Cpu" },
-    { id: "experience", label: "EXPERIENCE", name: "EXPERIENCE TOWER", subtitle: "Career & Internships", icon: "Briefcase" },
-    { id: "vault", label: "VAULT", name: "ACHIEVEMENT VAULT", subtitle: "Trophies & Credentials", icon: "Trophy" },
-    { id: "archive", label: "ARCHIVE", name: "EDUCATION ARCHIVE", subtitle: "Academic Transcripts", icon: "GraduationCap" },
-    { id: "terminal", label: "TERMINAL", name: "COMMUNICATION TERMINAL", subtitle: "Encrypted Transmission", icon: "Radio" }
+    { id: "city", label: "CITY STREETS", name: "DIGITAL CITY", subtitle: "Free Street Exploration", icon: "Compass" },
+    { id: "education", label: "EDUCATION", name: "EDUCATION TOWER", subtitle: "Futuristic University Tower", icon: "GraduationCap" },
+    { id: "projects", label: "PROJECTS", name: "PROJECTS RESEARCH FACILITY", subtitle: "Interactive Systems Lab", icon: "Code2" },
+    { id: "lab", label: "TECH LAB", name: "TECH LAB FACILITY", subtitle: "Glowing Research Lab", icon: "Cpu" },
+    { id: "experience", label: "EXPERIENCE", name: "EXPERIENCE TOWER", subtitle: "Corporate Skyscraper", icon: "Briefcase" },
+    { id: "vault", label: "ACHIEVEMENTS", name: "ACHIEVEMENT VAULT", subtitle: "Trophy & Vault Tower", icon: "Trophy" },
+    { id: "certifications", label: "CERTIFICATIONS", name: "CERTIFICATION ARCHIVE", subtitle: "Holographic Archive", icon: "FileCheck" },
+    { id: "contact", label: "CONTACT", name: "COMMUNICATION TOWER", subtitle: "Transmission Spire", icon: "Radio" }
   ]
 };
