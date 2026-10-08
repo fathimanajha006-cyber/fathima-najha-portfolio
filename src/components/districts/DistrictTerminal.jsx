@@ -51,7 +51,7 @@ export default function DistrictTerminal() {
       setTransmitStatus('sent');
 
       // Also compose mailto link for direct delivery
-      const subject = encodeURIComponent(`Inquiry from ${formState.name || 'Collaborator'} via FATHIMA.OS`);
+      const subject = encodeURIComponent(`Inquiry from ${formState.name || 'Collaborator'} via FATHIMA NAJHA.OS`);
       const body = encodeURIComponent(formState.message);
       window.open(`mailto:${profile.email}?subject=${subject}&body=${body}`, '_blank');
     }, 1200);

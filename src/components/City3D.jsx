@@ -1,157 +1,172 @@
 import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
-import { createCuteCharacter } from './CuteCharacter';
+import { createCyberCharacter } from './CyberCharacter';
 import { soundManager } from '../utils/soundManager';
 
-// 7 Landmark Buildings in the Radial Central Plaza
-export const CUTE_BUILDINGS = [
+// 8 Distinct Architectural Districts + Central Plaza Coordinates
+export const DISTRICT_NODES = [
+  {
+    id: 'core',
+    num: '00',
+    name: 'NAJHA CENTRAL',
+    label: 'CITY CORE',
+    pos: new THREE.Vector3(0, 0, 16),
+    camPos: new THREE.Vector3(0, 14, 42),
+    lookAt: new THREE.Vector3(0, 3, 12),
+    color: 0x00ffcc,
+    signColor: '#00ffcc'
+  },
+  {
+    id: 'identity',
+    num: '01',
+    name: 'IDENTITY DISTRICT',
+    label: '01 — IDENTITY',
+    pos: new THREE.Vector3(-28, 0, 0),
+    camPos: new THREE.Vector3(-28, 12, 18),
+    lookAt: new THREE.Vector3(-28, 10, 0),
+    color: 0x00e5ff,
+    signColor: '#00e5ff'
+  },
   {
     id: 'education',
-    name: 'EDUCATION',
-    subtitle: 'University Tower',
-    emoji: '🎓',
-    pos: new THREE.Vector3(0, 0, -32),
-    color: 0x818cf8, // soft lavender/indigo
-    accent: 0xa5b4fc,
-    roofColor: 0x4f46e5,
-    icon: '🎓'
+    num: '02',
+    name: 'EDUCATION DISTRICT',
+    label: '02 — EDUCATION',
+    pos: new THREE.Vector3(-42, 0, -32),
+    camPos: new THREE.Vector3(-42, 16, -14),
+    lookAt: new THREE.Vector3(-42, 12, -32),
+    color: 0x38bdf8,
+    signColor: '#38bdf8'
   },
   {
     id: 'projects',
-    name: 'PROJECTS',
-    subtitle: 'Creative Tech Studio',
-    emoji: '💻',
-    pos: new THREE.Vector3(26, 0, -18),
-    color: 0x06b6d4, // bright pastel cyan
-    accent: 0x67e8f9,
-    roofColor: 0x0891b2,
-    icon: '💻'
+    num: '03',
+    name: 'PROJECT DISTRICT',
+    label: '03 — PROJECTS',
+    pos: new THREE.Vector3(38, 0, -28),
+    camPos: new THREE.Vector3(38, 18, -10),
+    lookAt: new THREE.Vector3(38, 14, -28),
+    color: 0x00ffcc,
+    signColor: '#00ffcc'
   },
   {
     id: 'lab',
-    name: 'TECH LAB',
-    subtitle: 'Science & Code Lab',
-    emoji: '🧪',
-    pos: new THREE.Vector3(-26, 0, -18),
-    color: 0xa855f7, // soft friendly purple
-    accent: 0xd8b4fe,
-    roofColor: 0x7e22ce,
-    icon: '🧪'
+    num: '04',
+    name: 'TECH LAB DISTRICT',
+    label: '04 — TECH LAB',
+    pos: new THREE.Vector3(-36, 0, 36),
+    camPos: new THREE.Vector3(-36, 14, 52),
+    lookAt: new THREE.Vector3(-36, 10, 36),
+    color: 0xa855f7,
+    signColor: '#a855f7'
   },
   {
     id: 'experience',
-    name: 'EXPERIENCE',
-    subtitle: 'Modern Office Tower',
-    emoji: '💼',
-    pos: new THREE.Vector3(-30, 0, 14),
-    color: 0xfb923c, // warm peach / orange
-    accent: 0xfed7aa,
-    roofColor: 0xea580c,
-    icon: '💼'
+    num: '05',
+    name: 'EXPERIENCE DISTRICT',
+    label: '05 — EXPERIENCE',
+    pos: new THREE.Vector3(42, 0, 8),
+    camPos: new THREE.Vector3(42, 16, 26),
+    lookAt: new THREE.Vector3(42, 12, 8),
+    color: 0x38bdf8,
+    signColor: '#38bdf8'
   },
   {
     id: 'vault',
-    name: 'ACHIEVEMENTS',
-    subtitle: 'Golden Trophy Tower',
-    emoji: '🏆',
-    pos: new THREE.Vector3(30, 0, 14),
-    color: 0xfacc15, // warm golden yellow
-    accent: 0xfef08a,
-    roofColor: 0xca8a04,
-    icon: '🏆'
+    num: '06',
+    name: 'ACHIEVEMENT DISTRICT',
+    label: '06 — ACHIEVEMENTS',
+    pos: new THREE.Vector3(0, 0, -68),
+    camPos: new THREE.Vector3(0, 18, -48),
+    lookAt: new THREE.Vector3(0, 12, -68),
+    color: 0xf59e0b,
+    signColor: '#f59e0b'
   },
   {
     id: 'certifications',
-    name: 'CERTIFICATIONS',
-    subtitle: 'Cute Library Archive',
-    emoji: '📜',
-    pos: new THREE.Vector3(-16, 0, 32),
-    color: 0x10b981, // mint / emerald pastel
-    accent: 0x6ee7b7,
-    roofColor: 0x059669,
-    icon: '📜'
+    num: '07',
+    name: 'ARCHIVE DISTRICT',
+    label: '07 — ARCHIVE',
+    pos: new THREE.Vector3(-14, 0, 68),
+    camPos: new THREE.Vector3(-14, 14, 84),
+    lookAt: new THREE.Vector3(-14, 10, 68),
+    color: 0x10b981,
+    signColor: '#10b981'
   },
   {
     id: 'contact',
-    name: 'CONTACT',
-    subtitle: 'Communication Tower',
-    emoji: '📡',
-    pos: new THREE.Vector3(16, 0, 32),
-    color: 0xf43f5e, // soft rose / pink
-    accent: 0xfda4af,
-    roofColor: 0xe11d48,
-    icon: '📡'
+    num: '08',
+    name: 'COMMUNICATION DISTRICT',
+    label: '08 — CONTACT',
+    pos: new THREE.Vector3(26, 0, 64),
+    camPos: new THREE.Vector3(26, 16, 80),
+    lookAt: new THREE.Vector3(26, 12, 64),
+    color: 0xf43f5e,
+    signColor: '#f43f5e'
   }
 ];
 
 export default function City3D({
-  activeBuilding,
-  onSelectBuilding,
-  onHoverBuilding,
-  reducedMotion
+  targetDistrictId,
+  isTraveling,
+  travelProgress,
+  onTravelComplete,
+  onSelectDistrict,
+  reducedMotion,
+  isOpeningCinematic
 }) {
   const containerRef = useRef(null);
   const stateRef = useRef({
     scene: null,
     camera: null,
     renderer: null,
-    guideCharacter: null,
-    buildingGroups: {},
+    character: null,
+    landmarksMap: {},
     interactiveMeshes: [],
-    clouds: [],
-    cars: [],
-    animatedDecor: [],
-    camTarget: new THREE.Vector3(0, 3, 0),
-    desiredCamPos: new THREE.Vector3(0, 36, 48), // cozy isometric wide establishing shot
-    currentCamPos: new THREE.Vector3(0, 36, 48),
-    currentCamTarget: new THREE.Vector3(0, 3, 0),
+    trafficStreams: [],
+    transitVehicle: null,
+    startCamPos: new THREE.Vector3(0, 14, 42),
+    startLookAt: new THREE.Vector3(0, 3, 12),
+    currentCamPos: new THREE.Vector3(0, 14, 42),
+    currentLookAt: new THREE.Vector3(0, 3, 12),
     isDragging: false,
     dragStart: { x: 0, y: 0 },
-    orbitAngle: 0,
-    orbitPitch: 0.55,
+    orbitOffset: new THREE.Vector2(0, 0),
     hoveredId: null
   });
 
-  // Camera navigation when activeBuilding changes
+  // Handle destination changes & travel trigger
   useEffect(() => {
-    if (activeBuilding === 'city' || !activeBuilding) {
-      // Return to Wide Plaza View
-      stateRef.current.desiredCamPos.set(0, 34, 46);
-      stateRef.current.camTarget.set(0, 2, 0);
-    } else {
-      const b = CUTE_BUILDINGS.find((item) => item.id === activeBuilding);
-      if (b) {
-        // Fly directly toward the building with a cozy angled front view
-        const dir = b.pos.clone().normalize();
-        const camOffset = dir.clone().multiplyScalar(14).add(new THREE.Vector3(0, 11, 0));
-        stateRef.current.desiredCamPos.copy(b.pos).add(camOffset);
-        stateRef.current.camTarget.copy(b.pos).add(new THREE.Vector3(0, 5, 0));
-      }
+    const dest = DISTRICT_NODES.find((d) => d.id === targetDistrictId) || DISTRICT_NODES[0];
+    if (stateRef.current.camera) {
+      stateRef.current.startCamPos.copy(stateRef.current.currentCamPos);
+      stateRef.current.startLookAt.copy(stateRef.current.currentLookAt);
     }
-  }, [activeBuilding]);
+  }, [targetDistrictId]);
 
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
-    // --- SCENE SETUP ---
+    // --- THREE.JS SCENE SETUP ---
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0xdceefb); // Soft pastel morning sky
-    scene.fog = new THREE.FogExp2(0xdceefb, 0.008);
+    scene.background = new THREE.Color(0x02050f);
+    scene.fog = new THREE.FogExp2(0x02050f, 0.011);
     stateRef.current.scene = scene;
 
-    // --- CAMERA SETUP ---
+    // Camera
     const camera = new THREE.PerspectiveCamera(
-      48,
+      54,
       container.clientWidth / container.clientHeight,
       0.1,
-      1000
+      1400
     );
-    camera.position.set(0, 36, 48);
-    camera.lookAt(0, 2, 0);
+    camera.position.set(0, 80, 140); // starts high in atmosphere for cinematic opening
+    camera.lookAt(0, 8, 16);
     stateRef.current.camera = camera;
+    stateRef.current.currentCamPos.copy(camera.position);
 
-    // --- RENDERER SETUP ---
+    // Renderer
     const renderer = new THREE.WebGLRenderer({
       antialias: true,
       powerPreference: 'high-performance',
@@ -160,505 +175,474 @@ export default function City3D({
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setSize(container.clientWidth, container.clientHeight);
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.15;
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMappingExposure = 1.35;
     container.appendChild(renderer.domElement);
     stateRef.current.renderer = renderer;
 
-    // --- COZY LIGHTING ---
-    const hemiLight = new THREE.HemisphereLight(0xfffbf0, 0xdcf0fa, 1.4);
-    scene.add(hemiLight);
+    // --- LIGHTING ---
+    const ambientLight = new THREE.AmbientLight(0x081326, 2.8);
+    scene.add(ambientLight);
 
-    const sunLight = new THREE.DirectionalLight(0xfff7e6, 2.2);
-    sunLight.position.set(45, 80, 45);
-    sunLight.castShadow = true;
-    sunLight.shadow.mapSize.width = 2048;
-    sunLight.shadow.mapSize.height = 2048;
-    sunLight.shadow.camera.near = 10;
-    sunLight.shadow.camera.far = 200;
-    const shadowR = 60;
-    sunLight.shadow.camera.left = -shadowR;
-    sunLight.shadow.camera.right = shadowR;
-    sunLight.shadow.camera.top = shadowR;
-    sunLight.shadow.camera.bottom = -shadowR;
-    sunLight.shadow.bias = -0.0005;
-    scene.add(sunLight);
+    const tealDir = new THREE.DirectionalLight(0x00f0ff, 1.8);
+    tealDir.position.set(60, 100, 60);
+    scene.add(tealDir);
 
-    // Soft sky rim light
-    const skyFill = new THREE.DirectionalLight(0xbae6fd, 0.8);
-    skyFill.position.set(-45, 60, -45);
-    scene.add(skyFill);
+    const purpleDir = new THREE.DirectionalLight(0xa855f7, 1.3);
+    purpleDir.position.set(-60, 80, -60);
+    scene.add(purpleDir);
 
-    // --- GROUND ISLAND: SOFT MINT PARK & COBBLESTONE PATHS ---
-    const islandGeo = new THREE.CylinderGeometry(62, 66, 4, 64);
-    const islandMat = new THREE.MeshStandardMaterial({
-      color: 0xebf7ee, // fresh soft mint grass
-      roughness: 0.8,
-      metalness: 0.05
+    // --- WET CYBER ASPHALT GROUND GRID ---
+    const groundGeo = new THREE.PlaneGeometry(500, 500, 60, 60);
+    const groundMat = new THREE.MeshStandardMaterial({
+      color: 0x030713,
+      roughness: 0.2,
+      metalness: 0.95
     });
-    const island = new THREE.Mesh(islandGeo, islandMat);
-    island.position.y = -2;
-    island.receiveShadow = true;
-    scene.add(island);
+    const ground = new THREE.Mesh(groundGeo, groundMat);
+    ground.rotation.x = -Math.PI / 2;
+    scene.add(ground);
 
-    // Island Earth base
-    const earthBase = new THREE.Mesh(
-      new THREE.CylinderGeometry(66, 68, 6, 64),
-      new THREE.MeshStandardMaterial({ color: 0x94725c, roughness: 0.9 })
-    );
-    earthBase.position.y = -6;
-    scene.add(earthBase);
+    // Neon Cyber Ground Grid
+    const cyberGrid = new THREE.GridHelper(500, 100, 0x00ffcc, 0x091c36);
+    cyberGrid.position.y = 0.04;
+    scene.add(cyberGrid);
 
-    // Water surrounding ring
-    const water = new THREE.Mesh(
-      new THREE.RingGeometry(64, 180, 64),
-      new THREE.MeshStandardMaterial({
-        color: 0x7dd3fc,
-        roughness: 0.1,
-        metalness: 0.2,
-        transparent: true,
-        opacity: 0.85
-      })
-    );
-    water.rotation.x = -Math.PI / 2;
-    water.position.y = -3.8;
-    scene.add(water);
-
-    // --- CENTRAL CITY PLAZA (COBBLESTONE CIRCLE) ---
-    const plaza = new THREE.Mesh(
-      new THREE.CircleGeometry(16, 48),
-      new THREE.MeshStandardMaterial({
-        color: 0xfdf4ec, // warm cream stone
-        roughness: 0.7
-      })
-    );
-    plaza.rotation.x = -Math.PI / 2;
-    plaza.position.y = 0.02;
-    plaza.receiveShadow = true;
-    scene.add(plaza);
-
-    // Plaza outer border ring
-    const plazaRing = new THREE.Mesh(
-      new THREE.RingGeometry(15.8, 16.5, 48),
-      new THREE.MeshStandardMaterial({ color: 0xfde047, roughness: 0.6 })
-    );
-    plazaRing.rotation.x = -Math.PI / 2;
-    plazaRing.position.y = 0.03;
-    scene.add(plazaRing);
-
-    // Cobblestone roads leading from Plaza to each building
-    CUTE_BUILDINGS.forEach((b) => {
-      const roadLength = b.pos.length() - 8;
-      const roadGeo = new THREE.PlaneGeometry(5.5, roadLength);
-      const roadMat = new THREE.MeshStandardMaterial({
-        color: 0xfef9f3,
-        roughness: 0.7
-      });
-      const road = new THREE.Mesh(roadGeo, roadMat);
-      road.rotation.x = -Math.PI / 2;
-      const angle = Math.atan2(b.pos.x, b.pos.z);
-      road.rotation.z = -angle;
-
-      const midPoint = b.pos.clone().multiplyScalar(0.48);
-      road.position.set(midPoint.x, 0.025, midPoint.z);
-      road.receiveShadow = true;
-      scene.add(road);
-    });
-
-    // --- CENTRAL PLAZA FOUNTAIN ---
-    const fountainGroup = new THREE.Group();
-    fountainGroup.position.set(0, 0, 0);
-
-    const basin = new THREE.Mesh(
-      new THREE.CylinderGeometry(3.5, 4.0, 1.0, 32),
-      new THREE.MeshStandardMaterial({ color: 0xf1f5f9, roughness: 0.4 })
-    );
-    basin.position.y = 0.5;
-    basin.castShadow = true;
-    basin.receiveShadow = true;
-    fountainGroup.add(basin);
-
-    const fountainWater = new THREE.Mesh(
-      new THREE.CylinderGeometry(3.2, 3.2, 0.1, 32),
-      new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.1, metalness: 0.3 })
-    );
-    fountainWater.position.y = 0.95;
-    fountainGroup.add(fountainWater);
-
-    const pillar = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.8, 1.0, 2.2, 16),
-      new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.3 })
-    );
-    pillar.position.y = 1.6;
-    pillar.castShadow = true;
-    fountainGroup.add(pillar);
-
-    // Glowing cute gem on top of fountain
-    const gem = new THREE.Mesh(
-      new THREE.DodecahedronGeometry(0.7),
-      new THREE.MeshStandardMaterial({ color: 0x38bdf8, emissive: 0x38bdf8, emissiveIntensity: 0.4 })
-    );
-    gem.position.y = 3.0;
-    fountainGroup.add(gem);
-    scene.add(fountainGroup);
-
-    // --- CUTE GUIDE CHARACTER (NAJHA GUIDE) IN PLAZA ---
-    const guideCharacter = createCuteCharacter();
-    guideCharacter.position.set(0, 0, 4.2);
-    guideCharacter.rotation.y = 0; // facing front
-    scene.add(guideCharacter);
-    stateRef.current.guideCharacter = guideCharacter;
-
-    // --- PLAZA BENCHES & FLOWER PLANTERS ---
-    for (let i = 0; i < 4; i++) {
-      const angle = (i * Math.PI) / 2 + Math.PI / 4;
-      const bx = Math.sin(angle) * 9.5;
-      const bz = Math.cos(angle) * 9.5;
-
-      // Planter
-      const planter = new THREE.Mesh(
-        new THREE.CylinderGeometry(1.2, 1.0, 0.8, 16),
-        new THREE.MeshStandardMaterial({ color: 0xffedd5, roughness: 0.6 })
+    // Concentric Neon Transit Rings
+    for (let r of [25, 55, 95, 140]) {
+      const ring = new THREE.Mesh(
+        new THREE.RingGeometry(r - 0.3, r + 0.3, 64),
+        new THREE.MeshBasicMaterial({
+          color: r === 55 ? 0x38bdf8 : 0x00ffcc,
+          side: THREE.DoubleSide,
+          transparent: true,
+          opacity: 0.4
+        })
       );
-      planter.position.set(bx, 0.4, bz);
-      planter.castShadow = true;
-      scene.add(planter);
-
-      // Flowers
-      const flowerColor = i % 2 === 0 ? 0xf472b6 : 0xfacc15;
-      const flowers = new THREE.Mesh(
-        new THREE.SphereGeometry(0.8, 12, 12),
-        new THREE.MeshStandardMaterial({ color: flowerColor, roughness: 0.5 })
-      );
-      flowers.position.set(bx, 1.0, bz);
-      scene.add(flowers);
+      ring.rotation.x = -Math.PI / 2;
+      ring.position.y = 0.08;
+      scene.add(ring);
     }
 
-    // --- POPULATE THE 7 DISTINCT BUILDINGS ---
-    const interactiveMeshes = [];
-    const buildingGroups = {};
+    // --- CENTRAL EMBARKATION PLATFORM (NAJHA CENTRAL) ---
+    const centralGroup = new THREE.Group();
+    centralGroup.position.set(0, 0, 16);
 
-    function makeSignCanvas(emoji, name) {
+    const platform = new THREE.Mesh(
+      new THREE.CylinderGeometry(14, 15, 1.2, 32),
+      new THREE.MeshStandardMaterial({ color: 0x061122, metalness: 0.85, roughness: 0.25 })
+    );
+    platform.position.y = 0.6;
+    centralGroup.add(platform);
+
+    const platformRing = new THREE.Mesh(
+      new THREE.RingGeometry(13.8, 14.5, 32),
+      new THREE.MeshBasicMaterial({ color: 0x00ffcc, side: THREE.DoubleSide })
+    );
+    platformRing.rotation.x = -Math.PI / 2;
+    platformRing.position.y = 1.22;
+    centralGroup.add(platformRing);
+
+    // Holographic destination console in center of plaza
+    const consoleGeo = new THREE.CylinderGeometry(1.2, 1.8, 2.2, 8);
+    const consoleMat = new THREE.MeshStandardMaterial({
+      color: 0x0a1d38,
+      emissive: 0x00ffcc,
+      emissiveIntensity: 0.3
+    });
+    const terminalPillar = new THREE.Mesh(consoleGeo, consoleMat);
+    terminalPillar.position.y = 2.2;
+    centralGroup.add(terminalPillar);
+
+    const holoDisk = new THREE.Mesh(
+      new THREE.CylinderGeometry(2.4, 0.2, 0.4, 16),
+      new THREE.MeshBasicMaterial({ color: 0x00e5ff, transparent: true, opacity: 0.85 })
+    );
+    holoDisk.position.y = 3.6;
+    centralGroup.add(holoDisk);
+    scene.add(centralGroup);
+
+    // --- STYLIZED 3D CHARACTER (GUIDE AT CENTRAL PLAZA) ---
+    const character = createCyberCharacter();
+    character.position.set(3.5, 1.2, 15);
+    character.rotation.y = -Math.PI / 4;
+    scene.add(character);
+    stateRef.current.character = character;
+
+    // --- AUTONOMOUS TRANSIT VEHICLE (FOR CINEMATIC TRAVEL) ---
+    const transitVehicle = new THREE.Group();
+    const transitBody = new THREE.Mesh(
+      new THREE.BoxGeometry(2.4, 1.2, 5.0),
+      new THREE.MeshStandardMaterial({
+        color: 0x091830,
+        metalness: 0.9,
+        roughness: 0.2,
+        emissive: 0x00ffcc,
+        emissiveIntensity: 0.3
+      })
+    );
+    transitBody.position.y = 1.0;
+    transitVehicle.add(transitBody);
+
+    // Glow streaks on transit craft
+    const glowTrail = new THREE.Mesh(
+      new THREE.BoxGeometry(2.2, 0.2, 4.8),
+      new THREE.MeshBasicMaterial({ color: 0x00ffcc })
+    );
+    glowTrail.position.y = 0.3;
+    transitVehicle.add(glowTrail);
+    transitVehicle.position.set(0, 1.5, 20);
+    scene.add(transitVehicle);
+    stateRef.current.transitVehicle = transitVehicle;
+
+    // --- BUILD THE 8 RECOGNIZED ARCHITECTURAL LANDMARKS ---
+    const landmarksMap = {};
+    const interactiveMeshes = [];
+
+    function makeHoloSign(num, name, colorHex) {
       const canvas = document.createElement('canvas');
       canvas.width = 512;
       canvas.height = 180;
       const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#030814';
+      ctx.fillRect(0, 0, 512, 180);
+      ctx.strokeStyle = colorHex;
+      ctx.lineWidth = 6;
+      ctx.strokeRect(8, 8, 496, 164);
+      ctx.fillStyle = colorHex;
+      ctx.fillRect(8, 8, 20, 20);
+      ctx.fillRect(484, 152, 20, 20);
 
-      // Rounded pill badge
       ctx.fillStyle = '#ffffff';
-      ctx.beginPath();
-      ctx.roundRect(10, 10, 492, 160, 40);
-      ctx.fill();
-
-      // Border
-      ctx.lineWidth = 10;
-      ctx.strokeStyle = '#38bdf8';
-      ctx.stroke();
-
-      // Text
-      ctx.font = 'bold 58px sans-serif';
-      ctx.fillStyle = '#0f172a';
+      ctx.font = 'bold 36px monospace';
       ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(`${emoji} ${name}`, 256, 90);
+      ctx.fillText(`${num} // ${name}`, 256, 85);
+
+      ctx.fillStyle = colorHex;
+      ctx.font = '600 20px monospace';
+      ctx.fillText('[ TAP / SELECT TO ENTER ]', 256, 130);
 
       const tex = new THREE.CanvasTexture(canvas);
       tex.needsUpdate = true;
       return tex;
     }
 
-    CUTE_BUILDINGS.forEach((b) => {
-      const bGroup = new THREE.Group();
-      bGroup.position.copy(b.pos);
-      bGroup.userData = { buildingId: b.id, name: b.name };
-      scene.add(bGroup);
+    DISTRICT_NODES.forEach((d) => {
+      if (d.id === 'core') return;
 
-      // Unique architecture per building:
-      let mainBody;
-      let roof;
+      const group = new THREE.Group();
+      group.position.copy(d.pos);
+      group.userData = { districtId: d.id, name: d.name };
+      scene.add(group);
 
-      if (b.id === 'education') {
-        // Cute university with clock/spire & arched wings
-        mainBody = new THREE.Mesh(
-          new THREE.BoxGeometry(10, 14, 9),
-          new THREE.MeshStandardMaterial({ color: b.color, roughness: 0.4 })
-        );
-        mainBody.position.y = 7;
-        roof = new THREE.Mesh(
-          new THREE.ConeGeometry(5.5, 8, 4),
-          new THREE.MeshStandardMaterial({ color: b.roofColor, roughness: 0.3 })
-        );
-        roof.position.y = 18;
-        roof.rotation.y = Math.PI / 4;
+      let haloParts = [];
 
-        // Graduation cap ornament
-        const cap = new THREE.Mesh(
-          new THREE.BoxGeometry(3.5, 0.4, 3.5),
-          new THREE.MeshStandardMaterial({ color: 0x1e1b4b })
+      // 1. IDENTITY: Cyan crystalline obelisk with revolving rings
+      if (d.id === 'identity') {
+        const obelisk = new THREE.Mesh(
+          new THREE.CylinderGeometry(2.2, 4.0, 36, 6),
+          new THREE.MeshStandardMaterial({
+            color: 0x071e2e,
+            emissive: d.color,
+            emissiveIntensity: 0.35,
+            metalness: 0.9,
+            roughness: 0.2
+          })
         );
-        cap.position.y = 22.5;
-        bGroup.add(cap);
-      } else if (b.id === 'projects') {
-        // Creative tech studio: staggered pastel cubes & screens
-        mainBody = new THREE.Mesh(
-          new THREE.BoxGeometry(11, 12, 10),
-          new THREE.MeshStandardMaterial({ color: b.color, roughness: 0.4 })
-        );
-        mainBody.position.y = 6;
-        roof = new THREE.Mesh(
-          new THREE.BoxGeometry(9, 4, 8),
-          new THREE.MeshStandardMaterial({ color: b.roofColor, roughness: 0.3 })
-        );
-        roof.position.y = 14;
+        obelisk.position.y = 18;
+        group.add(obelisk);
 
-        // Giant floating code screen
-        const screen = new THREE.Mesh(
-          new THREE.BoxGeometry(4.5, 2.8, 0.4),
-          new THREE.MeshBasicMaterial({ color: 0x38bdf8 })
-        );
-        screen.position.set(0, 18, 0);
-        bGroup.add(screen);
-      } else if (b.id === 'lab') {
-        // Cute science dome laboratory
-        mainBody = new THREE.Mesh(
-          new THREE.CylinderGeometry(5.5, 6.0, 10, 24),
-          new THREE.MeshStandardMaterial({ color: b.color, roughness: 0.4 })
-        );
-        mainBody.position.y = 5;
-        roof = new THREE.Mesh(
-          new THREE.SphereGeometry(5.2, 24, 16, 0, Math.PI * 2, 0, Math.PI / 2),
-          new THREE.MeshStandardMaterial({ color: b.roofColor, roughness: 0.2, transparent: true, opacity: 0.9 })
-        );
-        roof.position.y = 10;
-      } else if (b.id === 'experience') {
-        // Stepped cute office tower
-        mainBody = new THREE.Mesh(
-          new THREE.BoxGeometry(8.5, 16, 8.5),
-          new THREE.MeshStandardMaterial({ color: b.color, roughness: 0.4 })
-        );
-        mainBody.position.y = 8;
-        roof = new THREE.Mesh(
-          new THREE.BoxGeometry(6.5, 3.5, 6.5),
-          new THREE.MeshStandardMaterial({ color: b.roofColor, roughness: 0.3 })
-        );
-        roof.position.y = 17.5;
-      } else if (b.id === 'vault') {
-        // Trophy tower with golden cup on top
-        mainBody = new THREE.Mesh(
-          new THREE.CylinderGeometry(5.0, 5.8, 12, 16),
-          new THREE.MeshStandardMaterial({ color: b.color, roughness: 0.4 })
-        );
-        mainBody.position.y = 6;
-        roof = new THREE.Mesh(
-          new THREE.ConeGeometry(5.2, 5, 16),
-          new THREE.MeshStandardMaterial({ color: b.roofColor, roughness: 0.3 })
-        );
-        roof.position.y = 14.5;
+        for (let r = 0; r < 2; r++) {
+          const ring = new THREE.Mesh(
+            new THREE.TorusGeometry(6 + r * 2, 0.15, 16, 48),
+            new THREE.MeshBasicMaterial({ color: d.color })
+          );
+          ring.position.y = 22 + r * 6;
+          ring.rotation.x = Math.PI / 3 + r * 0.4;
+          group.add(ring);
+          haloParts.push(ring);
+        }
+      }
 
-        // Big golden trophy on roof
+      // 2. EDUCATION: University Spire with celestial rings
+      else if (d.id === 'education') {
+        const spire = new THREE.Mesh(
+          new THREE.ConeGeometry(4.0, 42, 6),
+          new THREE.MeshStandardMaterial({
+            color: 0x081b34,
+            emissive: d.color,
+            emissiveIntensity: 0.35,
+            metalness: 0.85
+          })
+        );
+        spire.position.y = 21;
+        group.add(spire);
+
+        const ring = new THREE.Mesh(
+          new THREE.TorusGeometry(7.5, 0.18, 16, 48),
+          new THREE.MeshBasicMaterial({ color: d.color })
+        );
+        ring.position.y = 28;
+        ring.rotation.x = Math.PI / 4;
+        group.add(ring);
+        haloParts.push(ring);
+      }
+
+      // 3. PROJECTS (HERO DISTRICT): Massive dual-arch research megastructure & bridge
+      else if (d.id === 'projects') {
+        for (let sign of [-1, 1]) {
+          const pillar = new THREE.Mesh(
+            new THREE.BoxGeometry(4.5, 48, 5.0),
+            new THREE.MeshStandardMaterial({
+              color: 0x061922,
+              emissive: d.color,
+              emissiveIntensity: 0.4,
+              metalness: 0.9
+            })
+          );
+          pillar.position.set(sign * 7.5, 24, 0);
+          group.add(pillar);
+        }
+
+        const skybridge = new THREE.Mesh(
+          new THREE.BoxGeometry(22, 4.5, 7.0),
+          new THREE.MeshStandardMaterial({ color: 0x0b2533, metalness: 0.85 })
+        );
+        skybridge.position.set(0, 40, 0);
+        group.add(skybridge);
+
+        // Pulsing floating collider core
+        const core = new THREE.Mesh(
+          new THREE.IcosahedronGeometry(4.2, 1),
+          new THREE.MeshBasicMaterial({ color: 0x00ffcc, wireframe: true })
+        );
+        core.position.set(0, 24, 0);
+        group.add(core);
+        haloParts.push(core);
+      }
+
+      // 4. TECH LAB: Levitating polyhedral core & laser field
+      else if (d.id === 'lab') {
+        const base = new THREE.Mesh(
+          new THREE.CylinderGeometry(6, 8, 12, 6),
+          new THREE.MeshStandardMaterial({ color: 0x120822, metalness: 0.85 })
+        );
+        base.position.y = 6;
+        group.add(base);
+
+        const crystal = new THREE.Mesh(
+          new THREE.OctahedronGeometry(4.8),
+          new THREE.MeshStandardMaterial({
+            color: 0xa855f7,
+            emissive: d.color,
+            emissiveIntensity: 0.5,
+            wireframe: true
+          })
+        );
+        crystal.position.y = 22;
+        group.add(crystal);
+        haloParts.push(crystal);
+      }
+
+      // 5. EXPERIENCE: Stepped corporate megatower
+      else if (d.id === 'experience') {
+        const tower = new THREE.Mesh(
+          new THREE.BoxGeometry(8.5, 46, 8.5),
+          new THREE.MeshStandardMaterial({
+            color: 0x051a24,
+            emissive: d.color,
+            emissiveIntensity: 0.3,
+            metalness: 0.85
+          })
+        );
+        tower.position.y = 23;
+        group.add(tower);
+      }
+
+      // 6. ACHIEVEMENTS: Vault & golden trophy dome
+      else if (d.id === 'vault') {
+        const dome = new THREE.Mesh(
+          new THREE.SphereGeometry(7.5, 16, 12, 0, Math.PI * 2, 0, Math.PI / 2),
+          new THREE.MeshStandardMaterial({
+            color: 0x241804,
+            emissive: d.color,
+            emissiveIntensity: 0.35,
+            wireframe: true
+          })
+        );
+        dome.position.y = 0;
+        group.add(dome);
+
         const trophy = new THREE.Mesh(
-          new THREE.DodecahedronGeometry(2.0),
-          new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.7, roughness: 0.2 })
+          new THREE.DodecahedronGeometry(3.0),
+          new THREE.MeshBasicMaterial({ color: 0xf59e0b })
         );
-        trophy.position.y = 18.5;
-        bGroup.add(trophy);
-      } else if (b.id === 'certifications') {
-        // Cute library / archive with column portico
-        mainBody = new THREE.Mesh(
-          new THREE.BoxGeometry(9.5, 11, 8.5),
-          new THREE.MeshStandardMaterial({ color: b.color, roughness: 0.4 })
-        );
-        mainBody.position.y = 5.5;
-        roof = new THREE.Mesh(
-          new THREE.ConeGeometry(6.0, 4.5, 4),
-          new THREE.MeshStandardMaterial({ color: b.roofColor, roughness: 0.3 })
-        );
-        roof.position.y = 13.2;
-        roof.rotation.y = Math.PI / 4;
-      } else {
-        // Contact communication tower with antenna
-        mainBody = new THREE.Mesh(
-          new THREE.CylinderGeometry(4.2, 5.0, 13, 16),
-          new THREE.MeshStandardMaterial({ color: b.color, roughness: 0.4 })
-        );
-        mainBody.position.y = 6.5;
-        roof = new THREE.Mesh(
-          new THREE.ConeGeometry(4.4, 5, 16),
-          new THREE.MeshStandardMaterial({ color: b.roofColor, roughness: 0.3 })
-        );
-        roof.position.y = 15.5;
+        trophy.position.y = 12;
+        group.add(trophy);
+        haloParts.push(trophy);
+      }
 
-        // Antenna mast
-        const mast = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.3, 0.3, 7, 8),
-          new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.8 })
+      // 7. ARCHIVE: Cylindrical data-spire
+      else if (d.id === 'certifications') {
+        const cyl = new THREE.Mesh(
+          new THREE.CylinderGeometry(4.5, 5.0, 36, 16),
+          new THREE.MeshStandardMaterial({
+            color: 0x041822,
+            emissive: d.color,
+            emissiveIntensity: 0.35,
+            metalness: 0.85
+          })
         );
-        mast.position.y = 20.5;
-        bGroup.add(mast);
+        cyl.position.y = 18;
+        group.add(cyl);
+
+        for (let k = 0; k < 3; k++) {
+          const r = new THREE.Mesh(
+            new THREE.TorusGeometry(6.2, 0.15, 12, 32),
+            new THREE.MeshBasicMaterial({ color: d.color })
+          );
+          r.position.y = 12 + k * 8;
+          r.rotation.x = Math.PI / 2;
+          group.add(r);
+          haloParts.push(r);
+        }
+      }
+
+      // 8. CONTACT: High-altitude transmission mast with dish
+      else {
+        const mast = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.5, 2.2, 46, 8),
+          new THREE.MeshStandardMaterial({
+            color: 0x240916,
+            emissive: d.color,
+            emissiveIntensity: 0.4
+          })
+        );
+        mast.position.y = 23;
+        group.add(mast);
 
         const dish = new THREE.Mesh(
-          new THREE.SphereGeometry(1.2, 16, 8, 0, Math.PI),
-          new THREE.MeshStandardMaterial({ color: 0xffffff })
+          new THREE.CylinderGeometry(3.0, 0.3, 0.8, 16),
+          new THREE.MeshBasicMaterial({ color: d.color })
         );
-        dish.position.y = 23;
-        dish.rotation.x = Math.PI / 2;
-        bGroup.add(dish);
+        dish.position.y = 38;
+        dish.rotation.x = Math.PI / 4;
+        group.add(dish);
+        haloParts.push(dish);
       }
 
-      mainBody.castShadow = true;
-      mainBody.receiveShadow = true;
-      bGroup.add(mainBody);
-
-      if (roof) {
-        roof.castShadow = true;
-        bGroup.add(roof);
-      }
-
-      // Windows (warm lit little square windows)
-      for (let w = 0; w < 4; w++) {
-        const win = new THREE.Mesh(
-          new THREE.PlaneGeometry(1.4, 1.4),
-          new THREE.MeshBasicMaterial({ color: 0xffedd5 })
-        );
-        win.position.set(-2.2 + (w % 2) * 4.4, 4 + Math.floor(w / 2) * 4, 4.8);
-        bGroup.add(win);
-      }
-
-      // LARGE, READABLE FLOATING SIGN FACING THE PLAZA
-      const signTex = makeSignCanvas(b.emoji, b.name);
+      // Large Holographic Sign Facing Central Plaza
+      const signTex = makeHoloSign(d.num, d.label, d.signColor);
       const signMesh = new THREE.Mesh(
-        new THREE.PlaneGeometry(8.5, 3.0),
-        new THREE.MeshBasicMaterial({ map: signTex, transparent: true, side: THREE.DoubleSide })
+        new THREE.PlaneGeometry(10, 3.5),
+        new THREE.MeshBasicMaterial({ map: signTex, side: THREE.DoubleSide, transparent: true })
       );
-      signMesh.position.set(0, 19.5, 0);
+      signMesh.position.set(0, 18, 5.5);
 
-      // Rotate sign to always face the central plaza
-      const angleToCenter = Math.atan2(-b.pos.x, -b.pos.z);
+      const angleToCenter = Math.atan2(-d.pos.x, -d.pos.z + 16);
       signMesh.rotation.y = angleToCenter;
-      bGroup.add(signMesh);
+      group.add(signMesh);
 
-      // Large invisible click/tap hitbox for easy selection
+      // Hitbox for raycasting
       const hitBox = new THREE.Mesh(
-        new THREE.BoxGeometry(14, 24, 14),
+        new THREE.BoxGeometry(16, 42, 16),
         new THREE.MeshBasicMaterial({ visible: false })
       );
-      hitBox.position.y = 12;
-      hitBox.userData = { buildingId: b.id, name: b.name };
-      bGroup.add(hitBox);
+      hitBox.position.y = 21;
+      hitBox.userData = { districtId: d.id, name: d.name };
+      group.add(hitBox);
       interactiveMeshes.push(hitBox);
 
-      buildingGroups[b.id] = { group: bGroup, sign: signMesh, basePos: b.pos.clone() };
+      // Dedicated Point Light
+      const beaconLight = new THREE.PointLight(d.color, 2.5, 55, 1.3);
+      beaconLight.position.set(0, 16, 0);
+      group.add(beaconLight);
+
+      landmarksMap[d.id] = { group, haloParts, beaconLight, signMesh, data: d };
     });
 
+    stateRef.current.landmarksMap = landmarksMap;
     stateRef.current.interactiveMeshes = interactiveMeshes;
-    stateRef.current.buildingGroups = buildingGroups;
 
-    // --- CUTE STYLIZED TREES & FLOWERS AROUND ROADS ---
-    const treeGeo = new THREE.DodecahedronGeometry(1.8, 1);
-    const trunkGeo = new THREE.CylinderGeometry(0.35, 0.45, 2.2, 8);
-    const trunkMat = new THREE.MeshStandardMaterial({ color: 0x854d0e, roughness: 0.8 });
+    // --- PROCEDURAL SURROUNDING METROPOLIS SKYSCRAPERS ---
+    const bldMat = new THREE.MeshStandardMaterial({
+      color: 0x050b18,
+      roughness: 0.3,
+      metalness: 0.85
+    });
 
-    for (let t = 0; t < 28; t++) {
-      const angle = (t / 28) * Math.PI * 2 + Math.random() * 0.15;
-      const dist = 20 + Math.random() * 32;
+    for (let b = 0; b < 65; b++) {
+      const angle = (b / 65) * Math.PI * 2 + Math.random() * 0.12;
+      const dist = 42 + Math.random() * 95;
       const x = Math.sin(angle) * dist;
       const z = Math.cos(angle) * dist;
 
-      // Don't collide with buildings
-      const nearB = CUTE_BUILDINGS.some((b) => b.pos.distanceTo(new THREE.Vector3(x, 0, z)) < 8);
-      if (nearB) continue;
+      const overlaps = DISTRICT_NODES.some((dn) => dn.pos.distanceTo(new THREE.Vector3(x, 0, z)) < 16);
+      if (overlaps) continue;
 
-      const tree = new THREE.Group();
-      tree.position.set(x, 0, z);
+      const w = 7 + Math.random() * 8;
+      const d = 7 + Math.random() * 8;
+      const h = 22 + Math.random() * 65;
 
-      const trunk = new THREE.Mesh(trunkGeo, trunkMat);
-      trunk.position.y = 1.1;
-      trunk.castShadow = true;
-      tree.add(trunk);
+      const box = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), bldMat);
+      box.position.set(x, h / 2, z);
+      scene.add(box);
 
-      // Cherry blossom pink or mint green foliage
-      const leafColor = t % 3 === 0 ? 0xfbcfe8 : 0x86efac;
-      const leaves = new THREE.Mesh(
-        treeGeo,
-        new THREE.MeshStandardMaterial({ color: leafColor, roughness: 0.6 })
+      // Glowing edge line
+      const edges = new THREE.EdgesGeometry(box.geometry);
+      const wire = new THREE.LineSegments(
+        edges,
+        new THREE.LineBasicMaterial({
+          color: b % 3 === 0 ? 0x00ffcc : b % 3 === 1 ? 0x38bdf8 : 0xa855f7,
+          transparent: true,
+          opacity: 0.32
+        })
       );
-      leaves.position.y = 2.8;
-      leaves.castShadow = true;
-      tree.add(leaves);
-
-      scene.add(tree);
+      wire.position.copy(box.position);
+      scene.add(wire);
     }
 
-    // --- CUTE CLOUDS DRIFTING SLOWLY ---
-    const clouds = [];
-    for (let c = 0; c < 8; c++) {
-      const cloud = new THREE.Group();
-      for (let s = 0; s < 4; s++) {
-        const puff = new THREE.Mesh(
-          new THREE.SphereGeometry(3.5 + Math.random() * 2, 12, 12),
-          new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 })
-        );
-        puff.position.set(s * 3.5 - 5, Math.random() * 1.5, Math.random() * 2);
-        cloud.add(puff);
-      }
-      cloud.position.set(
-        (Math.random() - 0.5) * 160,
-        35 + Math.random() * 18,
-        (Math.random() - 0.5) * 160
+    // --- ELEVATED FLYING TRAFFIC SKYWAYS ---
+    const trafficStreams = [];
+    for (let f = 0; f < 26; f++) {
+      const isRed = f % 2 === 0;
+      const car = new THREE.Mesh(
+        new THREE.BoxGeometry(0.9, 0.35, 2.8),
+        new THREE.MeshBasicMaterial({ color: isRed ? 0xff0055 : 0x00ffff })
       );
-      cloud.userData = { speed: 0.08 + Math.random() * 0.08 };
-      scene.add(cloud);
-      clouds.push(cloud);
+      const radius = 42 + (f % 5) * 16;
+      const altitude = 16 + (f % 6) * 6;
+      const speed = (0.22 + (f % 3) * 0.12) * (f % 2 === 0 ? 1 : -1);
+      car.userData = { radius, altitude, speed, angle: Math.random() * Math.PI * 2 };
+      scene.add(car);
+      trafficStreams.push(car);
     }
-    stateRef.current.clouds = clouds;
+    stateRef.current.trafficStreams = trafficStreams;
 
-    // --- LITTLE PASTEL CARS MOVING IN LOOP ---
-    const cars = [];
-    for (let k = 0; k < 4; k++) {
-      const carGroup = new THREE.Group();
-      const carColor = [0x38bdf8, 0xf472b6, 0xfacc15, 0x4ade80][k];
-
-      const carBody = new THREE.Mesh(
-        new THREE.BoxGeometry(2.0, 1.0, 3.5),
-        new THREE.MeshStandardMaterial({ color: carColor, roughness: 0.4 })
-      );
-      carBody.position.y = 0.8;
-      carGroup.add(carBody);
-
-      const cabin = new THREE.Mesh(
-        new THREE.BoxGeometry(1.6, 0.9, 1.8),
-        new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.2 })
-      );
-      cabin.position.set(0, 1.7, -0.2);
-      carGroup.add(cabin);
-
-      carGroup.userData = {
-        radius: 44,
-        angle: (k * Math.PI) / 2,
-        speed: 0.35
-      };
-      scene.add(carGroup);
-      cars.push(carGroup);
+    // --- FLOATING CYBER DUST PARTICLES ---
+    const moteCount = 650;
+    const moteGeo = new THREE.BufferGeometry();
+    const motePos = new Float32Array(moteCount * 3);
+    for (let m = 0; m < moteCount * 3; m += 3) {
+      motePos[m] = (Math.random() - 0.5) * 260;
+      motePos[m + 1] = Math.random() * 85;
+      motePos[m + 2] = (Math.random() - 0.5) * 260;
     }
-    stateRef.current.cars = cars;
+    moteGeo.setAttribute('position', new THREE.BufferAttribute(motePos, 3));
+    const motes = new THREE.Points(
+      moteGeo,
+      new THREE.PointsMaterial({
+        color: 0x00ffcc,
+        size: 0.8,
+        transparent: true,
+        opacity: 0.65,
+        blending: THREE.AdditiveBlending
+      })
+    );
+    scene.add(motes);
 
-    // --- RAYCASTING & CLICK / HOVER HANDLING ---
+    // --- RAYCASTING & DRAG CONTROLS ---
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
-
-    const getRaycastBuilding = (event) => {
-      const rect = container.getBoundingClientRect();
-      mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-      mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-
-      raycaster.setFromCamera(mouse, camera);
-      const hits = raycaster.intersectObjects(stateRef.current.interactiveMeshes, true);
-      if (hits.length > 0) {
-        return hits[0].object.userData.buildingId;
-      }
-      return null;
-    };
 
     const handlePointerDown = (e) => {
       stateRef.current.isDragging = true;
@@ -666,37 +650,49 @@ export default function City3D({
     };
 
     const handlePointerMove = (e) => {
-      // Dragging orbits the camera gently around the plaza
-      if (stateRef.current.isDragging && (!activeBuilding || activeBuilding === 'city')) {
+      if (stateRef.current.isDragging && !isTraveling) {
         const dx = e.clientX - stateRef.current.dragStart.x;
         const dy = e.clientY - stateRef.current.dragStart.y;
-        stateRef.current.orbitAngle += dx * 0.006;
-        stateRef.current.orbitPitch = Math.max(
-          0.25,
-          Math.min(1.1, stateRef.current.orbitPitch + dy * 0.004)
+        stateRef.current.orbitOffset.x += dx * 0.005;
+        stateRef.current.orbitOffset.y = Math.max(
+          -0.5,
+          Math.min(0.5, stateRef.current.orbitOffset.y + dy * 0.003)
         );
         stateRef.current.dragStart = { x: e.clientX, y: e.clientY };
       }
 
       // Check hover
-      const bId = getRaycastBuilding(e);
+      const rect = container.getBoundingClientRect();
+      mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(mouse, camera);
+      const hits = raycaster.intersectObjects(stateRef.current.interactiveMeshes, true);
+      const bId = hits.length > 0 ? hits[0].object.userData.districtId : null;
+
       if (bId !== stateRef.current.hoveredId) {
         stateRef.current.hoveredId = bId;
         container.style.cursor = bId ? 'pointer' : 'default';
         if (bId) soundManager.playHover();
-        onHoverBuilding(bId);
       }
     };
 
-    const handlePointerUp = (e) => {
+    const handlePointerUp = () => {
       stateRef.current.isDragging = false;
     };
 
     const handleClick = (e) => {
-      const bId = getRaycastBuilding(e);
-      if (bId) {
-        soundManager.playClick();
-        onSelectBuilding(bId);
+      const rect = container.getBoundingClientRect();
+      mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(mouse, camera);
+      const hits = raycaster.intersectObjects(stateRef.current.interactiveMeshes, true);
+
+      if (hits.length > 0) {
+        const bId = hits[0].object.userData.districtId;
+        if (bId) {
+          soundManager.playClick();
+          onSelectDistrict(bId);
+        }
       }
     };
 
@@ -714,58 +710,98 @@ export default function City3D({
       const delta = Math.min(clock.getDelta(), 0.1);
       const time = clock.getElapsedTime();
 
-      // Guide character animation
-      if (stateRef.current.guideCharacter?.userData?.anim) {
-        stateRef.current.guideCharacter.userData.anim.update(delta);
+      // Guide character idle animation
+      if (stateRef.current.character?.userData?.anim) {
+        stateRef.current.character.userData.anim.update(delta, false, 0);
       }
 
-      // Gem rotation on fountain
-      gem.rotation.y = time * 0.8;
-      gem.position.y = 3.0 + Math.sin(time * 2) * 0.15;
-
-      // Drifting clouds
-      stateRef.current.clouds.forEach((cl) => {
-        cl.position.x += cl.userData.speed;
-        if (cl.position.x > 80) cl.position.x = -80;
+      // Landmarks halo rotations
+      Object.values(stateRef.current.landmarksMap).forEach((item) => {
+        item.haloParts.forEach((part, idx) => {
+          part.rotation.y = time * (0.8 + idx * 0.3);
+        });
       });
 
-      // Moving cars along perimeter loop
-      stateRef.current.cars.forEach((car) => {
+      // Flying traffic along air lanes
+      stateRef.current.trafficStreams.forEach((car) => {
         car.userData.angle += car.userData.speed * delta;
         const rad = car.userData.radius;
         car.position.x = Math.sin(car.userData.angle) * rad;
         car.position.z = Math.cos(car.userData.angle) * rad;
+        car.position.y = car.userData.altitude;
         car.rotation.y = car.userData.angle + Math.PI / 2;
       });
 
-      // Hover feedback: smooth scale on hovered building
-      Object.entries(stateRef.current.buildingGroups).forEach(([id, item]) => {
-        const isHovered = stateRef.current.hoveredId === id;
-        const targetScale = isHovered ? 1.05 : 1.0;
-        item.group.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), 0.1);
-
-        // Sign gentle float
-        item.sign.position.y = 19.5 + Math.sin(time * 2 + (id.length)) * 0.25;
-      });
-
-      // Camera Orbit logic in wide City view
-      if (!activeBuilding || activeBuilding === 'city') {
-        const orbitDist = 52;
-        const targetX = Math.sin(stateRef.current.orbitAngle) * orbitDist * Math.cos(stateRef.current.orbitPitch);
-        const targetZ = Math.cos(stateRef.current.orbitAngle) * orbitDist * Math.cos(stateRef.current.orbitPitch);
-        const targetY = 16 + Math.sin(stateRef.current.orbitPitch) * 28;
-
-        stateRef.current.desiredCamPos.set(targetX, targetY, targetZ);
-        stateRef.current.camTarget.set(0, 3, 0);
+      // Drifting motes
+      const mArray = moteGeo.attributes.position.array;
+      for (let p = 0; p < moteCount; p++) {
+        mArray[p * 3 + 1] += 0.14;
+        if (mArray[p * 3 + 1] > 85) mArray[p * 3 + 1] = 0;
       }
+      moteGeo.attributes.position.needsUpdate = true;
 
-      // Smooth camera interpolation
-      const lerpSpeed = reducedMotion ? 0.15 : 0.055;
-      stateRef.current.currentCamPos.lerp(stateRef.current.desiredCamPos, lerpSpeed);
-      stateRef.current.currentCamTarget.lerp(stateRef.current.camTarget, lerpSpeed);
+      // ========================================================
+      // CAMERA SYSTEM: OPENING vs TRAVEL vs STATIONARY
+      // ========================================================
+      if (isOpeningCinematic) {
+        // High altitude sweep descending into the central district
+        const progress = Math.min(time / 6.0, 1.0);
+        camera.position.x = Math.sin(time * 0.15) * 30;
+        camera.position.y = THREE.MathUtils.lerp(80, 24, progress);
+        camera.position.z = THREE.MathUtils.lerp(140, 52, progress);
+        camera.lookAt(0, 4, 16);
+      } else if (isTraveling) {
+        // CINEMATIC TRAVELING: Autonomous hover vehicle glides along the elevated skyway
+        const dest = DISTRICT_NODES.find((d) => d.id === targetDistrictId) || DISTRICT_NODES[0];
+        const t = Math.min(travelProgress / 100, 1.0);
 
-      camera.position.copy(stateRef.current.currentCamPos);
-      camera.lookAt(stateRef.current.currentCamTarget);
+        // Smooth easeInOut cubic curve
+        const easeT = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+        // Curve trajectory from start to destination
+        const midPoint = new THREE.Vector3()
+          .addVectors(stateRef.current.startCamPos, dest.camPos)
+          .multiplyScalar(0.5);
+        midPoint.y += 10; // arc up slightly for dramatic skyline view
+
+        // Quadratic bezier interpolation
+        const currentPos = new THREE.Vector3();
+        currentPos.x = (1 - easeT) * (1 - easeT) * stateRef.current.startCamPos.x + 2 * (1 - easeT) * easeT * midPoint.x + easeT * easeT * dest.camPos.x;
+        currentPos.y = (1 - easeT) * (1 - easeT) * stateRef.current.startCamPos.y + 2 * (1 - easeT) * easeT * midPoint.y + easeT * easeT * dest.camPos.y;
+        currentPos.z = (1 - easeT) * (1 - easeT) * stateRef.current.startCamPos.z + 2 * (1 - easeT) * easeT * midPoint.z + easeT * easeT * dest.camPos.z;
+
+        const currentTarget = new THREE.Vector3().lerpVectors(stateRef.current.startLookAt, dest.lookAt, easeT);
+
+        camera.position.copy(currentPos);
+        camera.lookAt(currentTarget);
+
+        // Update transit vehicle position along the route
+        if (stateRef.current.transitVehicle) {
+          const vehPos = new THREE.Vector3().lerpVectors(
+            stateRef.current.startCamPos.clone().sub(new THREE.Vector3(0, 4, 8)),
+            dest.pos.clone().add(new THREE.Vector3(0, 2, 8)),
+            easeT
+          );
+          stateRef.current.transitVehicle.position.copy(vehPos);
+          stateRef.current.transitVehicle.lookAt(dest.pos);
+        }
+
+        stateRef.current.currentCamPos.copy(currentPos);
+        stateRef.current.currentLookAt.copy(currentTarget);
+      } else {
+        // STATIONARY DISTRICT INSPECTION
+        const dest = DISTRICT_NODES.find((d) => d.id === targetDistrictId) || DISTRICT_NODES[0];
+        const desiredPos = dest.camPos.clone();
+        desiredPos.x += Math.sin(stateRef.current.orbitOffset.x) * 12;
+        desiredPos.z += Math.cos(stateRef.current.orbitOffset.x) * 12 - 12;
+        desiredPos.y += stateRef.current.orbitOffset.y * 10;
+
+        stateRef.current.currentCamPos.lerp(desiredPos, reducedMotion ? 0.2 : 0.05);
+        stateRef.current.currentLookAt.lerp(dest.lookAt, reducedMotion ? 0.2 : 0.05);
+
+        camera.position.copy(stateRef.current.currentCamPos);
+        camera.lookAt(stateRef.current.currentLookAt);
+      }
 
       renderer.render(scene, camera);
     };
@@ -793,7 +829,7 @@ export default function City3D({
       }
       renderer.dispose();
     };
-  }, [reducedMotion, onSelectBuilding, onHoverBuilding, activeBuilding]);
+  }, [reducedMotion, isOpeningCinematic, isTraveling, targetDistrictId, onSelectDistrict]);
 
   return (
     <div

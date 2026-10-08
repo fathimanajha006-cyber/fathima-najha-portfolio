@@ -1,4 +1,4 @@
-// Futuristic Web Audio API Sound Synthesizer for FATHIMA.OS
+// Futuristic Web Audio API Sound Synthesizer for FATHIMA NAJHA.OS
 // Generates low-latency sci-fi sound effects and atmospheric ambient drone without external audio assets
 
 class SoundManager {

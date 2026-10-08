@@ -4,10 +4,11 @@ export const portfolioData = {
     title: "Computer Science Engineer",
     role: "Creative Developer & Systems Enthusiast",
     callsign: "FATHIMA NAJHA.OS",
-    compactBrand: "NAJHA.OS",
-    welcomeTagline: "Welcome to my little digital city.",
-    tagline: "Explore my journey, projects and skills.",
-    subtagline: "Building ideas in code with curiosity & care.",
+    systemTag: "NAJHA.OS",
+    kernel: "KERNEL 4.1",
+    welcomeTagline: "Welcome to my digital world.",
+    tagline: "Exploring technology, one system at a time.",
+    subtagline: "Building ideas in code.",
     location: "Calicut, Kerala, India",
     institution: "AWH Engineering College, Kuttikkattoor",
     email: "fathimanajha006@gmail.com",
@@ -403,13 +404,14 @@ export const portfolioData = {
   ],
 
   districts: [
-    { id: "city", label: "CITY PLAZA", name: "CENTRAL PLAZA", subtitle: "Miniature City Center", icon: "Home", emoji: "🏠", color: "#38bdf8" },
-    { id: "education", label: "EDUCATION", name: "EDUCATION TOWER", subtitle: "Cute University Tower", icon: "GraduationCap", emoji: "🎓", color: "#818cf8" },
-    { id: "projects", label: "PROJECTS", name: "PROJECTS STUDIO", subtitle: "Creative Tech Studio", icon: "Code2", emoji: "💻", color: "#06b6d4" },
-    { id: "lab", label: "TECH LAB", name: "TECH LAB", subtitle: "Cozy Science Lab", icon: "FlaskConical", emoji: "🧪", color: "#a855f7" },
-    { id: "experience", label: "EXPERIENCE", name: "EXPERIENCE TOWER", subtitle: "Modern Office Tower", icon: "Briefcase", emoji: "💼", color: "#fb923c" },
-    { id: "vault", label: "ACHIEVEMENTS", name: "ACHIEVEMENTS TOWER", subtitle: "Golden Trophy Tower", icon: "Trophy", emoji: "🏆", color: "#eab308" },
-    { id: "certifications", label: "CERTIFICATIONS", name: "CERTIFICATION ARCHIVE", subtitle: "Cute Library Archive", icon: "FileCheck", emoji: "📜", color: "#10b981" },
-    { id: "contact", label: "CONTACT", name: "COMMUNICATION TOWER", subtitle: "Friendly Comms Spire", icon: "Radio", emoji: "📡", color: "#f43f5e" }
+    { id: "core", num: "00", label: "CITY CORE", name: "NAJHA CENTRAL", subtitle: "Central Navigation Hub", icon: "Compass", color: "#00ffcc" },
+    { id: "identity", num: "01", label: "IDENTITY", name: "IDENTITY DISTRICT", subtitle: "Personal Dossier & Core", icon: "User", color: "#00e5ff" },
+    { id: "education", num: "02", label: "EDUCATION", name: "EDUCATION DISTRICT", subtitle: "University Spire & KTU B.Tech", icon: "GraduationCap", color: "#38bdf8" },
+    { id: "projects", num: "03", label: "PROJECTS", name: "PROJECT DISTRICT", subtitle: "AgriQueue & I/O Simulator", icon: "Code2", color: "#00ffcc" },
+    { id: "lab", num: "04", label: "TECH LAB", name: "TECH LAB DISTRICT", subtitle: "Systems & Programming Runtimes", icon: "Cpu", color: "#a855f7" },
+    { id: "experience", num: "05", label: "EXPERIENCE", name: "EXPERIENCE DISTRICT", subtitle: "JHF Innovation & Genzee Internships", icon: "Briefcase", color: "#38bdf8" },
+    { id: "vault", num: "06", label: "ACHIEVEMENTS", name: "ACHIEVEMENT DISTRICT", subtitle: "SIH 2026 3rd Prize & Tink-Her-Hack", icon: "Trophy", color: "#f59e0b" },
+    { id: "certifications", num: "07", label: "ARCHIVE", name: "ARCHIVE DISTRICT", subtitle: "9 Verified Certifications & Workshops", icon: "FileCheck", color: "#10b981" },
+    { id: "contact", num: "08", label: "TERMINAL", name: "COMMUNICATION DISTRICT", subtitle: "Encrypted Dispatch & Direct Uplink", icon: "Radio", color: "#f43f5e" }
   ]
 };

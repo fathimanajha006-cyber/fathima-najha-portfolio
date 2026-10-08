@@ -259,7 +259,7 @@ export function createArcadePerch() {
   ctx.fillStyle = '#00ffcc';
   ctx.font = 'bold 36px monospace';
   ctx.textAlign = 'center';
-  ctx.fillText('FATHIMA.OS', 128, 110);
+  ctx.fillText('NAJHA.OS', 128, 110);
   ctx.font = '22px monospace';
   ctx.fillStyle = '#38bdf8';
   ctx.fillText('SYSTEM READY', 128, 160);
